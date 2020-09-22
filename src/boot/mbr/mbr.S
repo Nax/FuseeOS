@@ -54,8 +54,6 @@ found:
     mov $0x4200, %ax
     mov $DAP, %si
 
-    xchg %bx, %bx
-
     int $0x13
 
     /* Restore dl and si */
