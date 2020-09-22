@@ -77,13 +77,17 @@ static void add_volume(FILE* dst, const char* path)
     record[3] = (char)cyl;
     record[4] = 0x60;
     to_chs(base + size - 512, &cyl, &head, &sec);
-    record[5]  = (char)head;
-    record[6]  = (sec & 0x3f) | ((cyl >> 2) & 0xc0);
-    record[7]  = (char)cyl;
+    record[5] = (char)head;
+    record[6] = (sec & 0x3f) | ((cyl >> 2) & 0xc0);
+    record[7] = (char)cyl;
+
+    base /= 512;
     record[8]  = (base & 0xff);
     record[9]  = ((base >> 8) & 0xff);
     record[10] = ((base >> 16) & 0xff);
     record[11] = ((base >> 24) & 0xff);
+
+    size /= 512;
     record[12] = (size & 0xff);
     record[13] = ((size >> 8) & 0xff);
     record[14] = ((size >> 16) & 0xff);
