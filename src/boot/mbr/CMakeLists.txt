@@ -1,4 +1,6 @@
+set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/mbr.ld")
 set(SOURCES mbr.S mbr.ld)
 add_executable(mbr ${SOURCES})
-target_link_options(mbr PRIVATE -ffreestanding -nostdlib -T${CMAKE_CURRENT_SOURCE_DIR}/mbr.ld)
+set_target_properties(mbr PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
+target_link_options(mbr PRIVATE -ffreestanding -nostdlib -T${LINKER_SCRIPT})
 install(TARGETS mbr RUNTIME DESTINATION boot)

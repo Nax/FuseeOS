@@ -1,5 +1,5 @@
 .code16
-.section .text16, "ax"
+.section .text.lo, "ax"
 
 check_a20:
     pusha
@@ -29,6 +29,9 @@ check_a20:
 
     pop %ax
     mov %al, %es:(%di)
+
+    xor %ax, %ax
+    mov %ax, %ds
 
     popa
     ret

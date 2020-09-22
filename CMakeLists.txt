@@ -18,8 +18,8 @@ else()
             -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
     )
     ExternalProject_Add_Step(ep_build reconfigure
-        DEPENDEES configure
-        DEPENDERS build
+        DEPENDEES download
+        DEPENDERS configure
         ALWAYS 1
     )
     add_subdirectory(tools)

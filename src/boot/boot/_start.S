@@ -1,5 +1,5 @@
 .code16
-.section .text16.start, "ax"
+.section .text.start, "ax"
 
 start:
     /* Disable interrupts */
@@ -40,7 +40,25 @@ start2:
     /* Now we have more leeway */
     /* Enable the A20 gate */
     call enable_a20
+
+    /* We will switch to protected mode soon */
+    /* Make sure to zero extend relevant registers first */
+    xor %eax, %eax
+    xor %ebx, %ebx
+    xor %ecx, %ecx
+    xor %edx, %edx
+    xor %esi, %esi
+    xor %edi, %edi
+    xor %ebp, %ebp
+
+    /* We will change that stack once we are in pmode */
+    mov $0x7c00, %esp
+
+    /* enter pmode */
+    call switch_mode_protected
+.code32
     xchg %bx, %bx
+.code16
 
 
 .align 0x10
