@@ -23,14 +23,25 @@ else()
         ALWAYS 1
     )
     add_subdirectory(tools)
-    set(IMAGE "${CMAKE_BINARY_DIR}/fuseeOS.img")
+    set(IMAGE   "${CMAKE_BINARY_DIR}/fuseeOS.img")
+    set(VOLUME  "${CMAKE_BINARY_DIR}/fuseeOS.vol")
+    add_custom_command(
+        OUTPUT "${VOLUME}"
+        COMMAND mkvolume "${VOLUME}" 41943040 "${CMAKE_BINARY_DIR}/tree/boot/boot"
+        DEPENDS
+            ep_build
+            mkvolume
+            "${CMAKE_BINARY_DIR}/tree/boot/boot"
+        VERBATIM
+    )
     add_custom_command(
         OUTPUT "${IMAGE}"
-        COMMAND mkimage "${IMAGE}" "${CMAKE_BINARY_DIR}/tree/boot/boot"
+        COMMAND mkimage "${IMAGE}" "${CMAKE_BINARY_DIR}/tree/boot/mbr" "${VOLUME}"
         DEPENDS
             ep_build
             mkimage
-            "${CMAKE_BINARY_DIR}/tree/boot/boot"
+            "${CMAKE_BINARY_DIR}/tree/boot/mbr"
+            "${VOLUME}"
         VERBATIM
     )
     add_custom_target(

@@ -1,0 +1,6 @@
+file(GLOB_RECURSE SOURCES "*.c" "*.S" "*.ld")
+set(FLAGS -mcmodel=kernel -mno-red-zone -nostdlib -ffreestanding)
+add_executable(kernel ${SOURCES})
+target_compile_options(kernel PRIVATE ${FLAGS})
+target_link_options(kernel PRIVATE ${FLAGS} -lgcc -T${CMAKE_CURRENT_SOURCE_DIR}/kernel.ld -z max-page-size=0x1000)
+install(TARGETS kernel RUNTIME DESTINATION boot)

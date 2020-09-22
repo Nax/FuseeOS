@@ -1,5 +1,5 @@
 .code16
-.section .text16
+.text
 
 bootstrap:
     /* Disable interrupts */

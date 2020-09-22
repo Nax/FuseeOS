@@ -1,5 +1,2 @@
-set(SOURCES boot0.S boot.ld)
-add_executable(boot ${SOURCES})
-set_target_properties(boot PROPERTIES LINKER_LANGUAGE C)
-target_link_options(boot PRIVATE -ffreestanding -nostdlib -T${CMAKE_CURRENT_SOURCE_DIR}/boot.ld)
-install(TARGETS boot RUNTIME DESTINATION boot)
+add_subdirectory(mbr)
+add_subdirectory(boot)
