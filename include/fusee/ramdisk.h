@@ -1,6 +1,0 @@
-#ifndef _INCLUDED_RAMDISK_H
-#define _INCLUDED_RAMDISK_H 1
-
-#define MFS_PAGE_SIZE 4096
-
-#endif

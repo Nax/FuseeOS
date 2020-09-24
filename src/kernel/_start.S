@@ -2,4 +2,5 @@
 .extern kmain
 
 _start:
+    jmp _start
     jmp kmain

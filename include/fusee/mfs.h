@@ -13,7 +13,7 @@
 #define MFS_TYPE(x)   (x & (0xffff0000))
 #define MFS_TYPE_FILE 0x00000000
 #define MFS_TYPE_DIR  0x00010000
-#define MFS_MAGIC     "MFS"
+#define MFS_MAGIC     "Meow"
 
 typedef struct
 {

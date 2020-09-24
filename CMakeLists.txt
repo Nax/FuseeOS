@@ -16,7 +16,7 @@ else()
             -DSUB_BUILD=ON
             -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/cmake/CrossToolchain.cmake
             -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DCMAKE_BUILD_TYPE=$<CONFIG>
     )
     ExternalProject_Add_Step(ep_build reconfigure
         DEPENDEES download
@@ -25,14 +25,27 @@ else()
     )
     include_directories(include)
     add_subdirectory(tools)
+
     set(IMAGE   "${CMAKE_BINARY_DIR}/fuseeOS.img")
     set(VOLUME  "${CMAKE_BINARY_DIR}/fuseeOS.vol")
+    set(INITRAM "${CMAKE_BINARY_DIR}/tree/boot/initram")
+
+    add_custom_command(
+        OUTPUT "${INITRAM}"
+        COMMAND mkinitram "${INITRAM}" "${CMAKE_SOURCE_DIR}/data/initram.txt" "${CMAKE_BINARY_DIR}/tree"
+        DEPENDS
+            ep_build
+            mkinitram
+            "${CMAKE_BINARY_DIR}/tree/boot/kernel"
+        VERBATIM
+    )
     add_custom_command(
         OUTPUT "${VOLUME}"
         COMMAND mkvolume "${VOLUME}" 41943040 "${CMAKE_BINARY_DIR}/tree/boot/boot" "${CMAKE_SOURCE_DIR}/data/image.txt" "${CMAKE_BINARY_DIR}/tree"
         DEPENDS
             ep_build
             mkvolume
+            "${INITRAM}"
             "${CMAKE_BINARY_DIR}/tree/boot/boot"
         VERBATIM
     )

@@ -1,5 +1,5 @@
 set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/kernel.ld")
-file(GLOB_RECURSE SOURCES "*.c" "*.S" "*.ld")
+file(GLOB_RECURSE SOURCES "*.c" "*.S")
 set(FLAGS -mcmodel=kernel -mno-red-zone -nostdlib -ffreestanding)
 add_executable(kernel ${SOURCES})
 set_target_properties(kernel PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
