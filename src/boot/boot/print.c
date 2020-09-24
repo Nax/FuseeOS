@@ -1,4 +1,4 @@
-#include "boot.h"
+#include <boot/boot/boot.h>
 
 #define SCREEN_BUFFER ((short*)0xb8000)
 #define MAX_X         80
@@ -70,8 +70,50 @@ void print(const char* str)
     }
 }
 
+static const char* const hex_chars = "0123456789abcdef";
+
 void puts(const char* str)
 {
     print(str);
     putchar('\n');
+}
+
+void puthex8(uint8_t v)
+{
+    print("0x");
+    for (int i = 0; i < 2; ++i)
+    {
+        putchar(hex_chars[v >> 4]);
+        v <<= 4;
+    }
+}
+
+void puthex16(uint16_t v)
+{
+    print("0x");
+    for (int i = 0; i < 4; ++i)
+    {
+        putchar(hex_chars[v >> 12]);
+        v <<= 4;
+    }
+}
+
+void puthex32(uint32_t v)
+{
+    print("0x");
+    for (int i = 0; i < 8; ++i)
+    {
+        putchar(hex_chars[v >> 28]);
+        v <<= 4;
+    }
+}
+
+void puthex64(uint64_t v)
+{
+    print("0x");
+    for (int i = 0; i < 16; ++i)
+    {
+        putchar(hex_chars[v >> 60]);
+        v <<= 4;
+    }
 }

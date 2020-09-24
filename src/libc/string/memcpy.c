@@ -1,4 +1,5 @@
 #include <string.h>
+#include <sys/_cext.h>
 
 void* memcpy(void* _RESTRICT dst, const void* _RESTRICT src, size_t size)
 {

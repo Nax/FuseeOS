@@ -1,4 +1,4 @@
-#include "boot.h"
+#include <boot/boot/boot.h>
 
 KernelBootParams g_kernel_params;
 
@@ -14,8 +14,8 @@ _NORETURN void bmain(int drive, const PartitionRecord* mbr)
 {
     kernel_params_init(drive, mbr);
     screen_init();
-    puts("Hello from the bootloader!");
-
+    puts("FuseeOS Bootloader\n");
+    memory_detect();
     for (;;)
     {
     }

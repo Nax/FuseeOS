@@ -1,4 +1,4 @@
-#ifndef BOOH_H
+#ifndef BOOT_H
 #define BOOT_H 1
 
 #include <stddef.h>
@@ -6,6 +6,8 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/kernel.h>
+
+extern KernelBootParams g_kernel_params;
 
 typedef struct
 {
@@ -16,6 +18,14 @@ typedef struct
     uint32_t esi;
     uint32_t edi;
 } _PACKED BiosArgs;
+
+typedef struct
+{
+    uint64_t base;
+    uint64_t size;
+    uint32_t type;
+    uint32_t attr;
+} _PACKED BiosMemRegion;
 
 typedef struct
 {
@@ -35,5 +45,13 @@ void screen_init(void);
 void putchar(int c);
 void print(const char* str);
 void puts(const char* str);
+
+void puthex8(uint8_t);
+void puthex16(uint16_t);
+void puthex32(uint32_t);
+void puthex64(uint64_t);
+
+/* Memory */
+void memory_detect(void);
 
 #endif

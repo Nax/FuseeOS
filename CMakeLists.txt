@@ -16,6 +16,7 @@ else()
             -DSUB_BUILD=ON
             -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/cmake/CrossToolchain.cmake
             -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     )
     ExternalProject_Add_Step(ep_build reconfigure
         DEPENDEES download

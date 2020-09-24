@@ -10,5 +10,5 @@ target_compile_definitions(libc_kernel PRIVATE __LIBC_MINIMAL__=1)
 
 add_library(libc_boot STATIC "${SOURCES}")
 set_target_properties(libc_boot PROPERTIES OUTPUT_NAME "c_boot")
-target_compile_options(libc_boot PRIVATE -m32 -ffreestanding -nostdlib)
+target_compile_options(libc_boot PRIVATE -m32 -ffreestanding -nostdlib -mno-sse -mno-sse2)
 target_compile_definitions(libc_boot PRIVATE __LIBC_MINIMAL__=1)
