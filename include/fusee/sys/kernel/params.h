@@ -21,11 +21,16 @@ typedef struct
 
 typedef struct
 {
-    uint32_t        boot_drive;
-    PartitionRecord mbr_partition;
-
+    uint32_t            boot_drive;
+    PartitionRecord     mbr_partition;
     KernelBootMemRegion mem_map[KERNEL_MAX_MEM_REGIONS];
     KernelBootMemRegion mem_free[KERNEL_MAX_MEM_REGIONS];
+    union
+    {
+        char*    initram;
+        uint64_t initram_addr;
+    };
+    uint64_t initram_size;
 } KernelBootParams;
 
 #endif

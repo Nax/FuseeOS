@@ -12,21 +12,12 @@ kernel_params_init(int drive, const PartitionRecord* mbr)
 
 _NORETURN void bmain(int drive, const PartitionRecord* mbr)
 {
-    uint64_t inode;
-
     kernel_params_init(drive, mbr);
     screen_init();
     puts("FuseeOS Bootloader\n");
     memory_detect();
     mfs_init();
-    inode = mfs_lookup_root("boot");
-    print("Found boot inode: ");
-    puthex64(inode);
-    putchar('\n');
-    inode = mfs_lookup_at(inode, "initram");
-    print("Found initram inode: ");
-    puthex64(inode);
-    putchar('\n');
+    initram_init();
     for (;;)
     {
     }

@@ -60,8 +60,14 @@ void* memory_alloc(uint32_t size);
 /* Disk */
 void disk_read_raw(char* dst, uint64_t lba, uint32_t sectors);
 
+/* MFS */
 void     mfs_init(void);
 uint64_t mfs_lookup_at(uint64_t inode, const char* name);
 uint64_t mfs_lookup_root(const char* name);
+uint64_t mfs_file_size(uint64_t inode);
+void     mfs_read(char* dst, uint64_t inode);
+
+/* InitRAM */
+void initram_init(void);
 
 #endif
