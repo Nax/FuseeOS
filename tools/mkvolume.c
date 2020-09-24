@@ -226,7 +226,7 @@ static void make_volume(MfsVolume* volume, int size)
     volume->size = (uint64_t)size;
     volume->data = calloc(1, size);
 
-    meta = &volume->pages[MSF_METADATA_PAGE].meta;
+    meta = &volume->pages[MFS_METADATA_PAGE].meta;
     memcpy(meta->magic, MFS_MAGIC, 4);
     meta->version    = 0x01000000;
     meta->page_count = volume->size / MFS_PAGE_SIZE;

@@ -36,7 +36,7 @@ else()
         DEPENDS
             ep_build
             mkinitram
-            "${CMAKE_BINARY_DIR}/tree/boot/kernel"
+            "${CMAKE_SOURCE_DIR}/data/initram.txt"
         VERBATIM
     )
     add_custom_command(
@@ -47,6 +47,7 @@ else()
             mkvolume
             "${INITRAM}"
             "${CMAKE_BINARY_DIR}/tree/boot/boot"
+            "${CMAKE_SOURCE_DIR}/data/image.txt"
         VERBATIM
     )
     add_custom_command(

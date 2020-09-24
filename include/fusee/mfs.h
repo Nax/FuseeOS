@@ -5,7 +5,7 @@
 
 #define MFS_PAGE_SIZE      4096
 #define MFS_RESERVED_PAGES 64
-#define MSF_METADATA_PAGE  63
+#define MFS_METADATA_PAGE  63
 #define MFS_BITMAP_SIZE    (MFS_PAGE_SIZE * 8)
 #define MFS_DATA_POINTERS  16
 #define MFS_IDATA_POINTERS (MFS_PAGE_SIZE / 8)
@@ -53,6 +53,7 @@ typedef union
     MfsPageFile     file;
     uint8_t         data[MFS_PAGE_SIZE];
     uint64_t        inodes[MFS_IDATA_POINTERS];
+    MfsDirEntry     dir;
 } MfsPage;
 
 #endif

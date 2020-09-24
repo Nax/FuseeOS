@@ -1,1 +1,2 @@
-F boot/kernel boot/kernel
+F boot/kernel   boot/kernel
+F boot/initram  boot/initram

@@ -7,6 +7,8 @@
 #include <strings.h>
 #include <sys/kernel.h>
 
+#define PAGESIZE 4096
+
 extern KernelBootParams g_kernel_params;
 
 typedef struct
@@ -52,6 +54,14 @@ void puthex32(uint32_t);
 void puthex64(uint64_t);
 
 /* Memory */
-void memory_detect(void);
+void  memory_detect(void);
+void* memory_alloc(uint32_t size);
+
+/* Disk */
+void disk_read_raw(char* dst, uint64_t lba, uint32_t sectors);
+
+void     mfs_init(void);
+uint64_t mfs_lookup_at(uint64_t inode, const char* name);
+uint64_t mfs_lookup_root(const char* name);
 
 #endif

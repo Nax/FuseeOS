@@ -53,3 +53,26 @@ void memory_detect(void)
     }
     putchar('\n');
 }
+
+void* memory_alloc(uint32_t size)
+{
+    uint32_t npages;
+    uint32_t base;
+
+    npages = (size + PAGESIZE - 1) / PAGESIZE;
+    size   = npages * size;
+
+    base = 0;
+    for (int i = 0; i < 32; ++i)
+    {
+        if (g_kernel_params.mem_free[i].size >= size)
+        {
+            base = g_kernel_params.mem_free[i].base;
+            g_kernel_params.mem_free[i].base += size;
+            g_kernel_params.mem_free[i].size -= size;
+            break;
+        }
+    }
+
+    return (void*)base;
+}
