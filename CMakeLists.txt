@@ -29,7 +29,7 @@ else()
     set(VOLUME  "${CMAKE_BINARY_DIR}/fuseeOS.vol")
     add_custom_command(
         OUTPUT "${VOLUME}"
-        COMMAND mkvolume "${VOLUME}" 41943040 "${CMAKE_BINARY_DIR}/tree/boot/boot"
+        COMMAND mkvolume "${VOLUME}" 41943040 "${CMAKE_BINARY_DIR}/tree/boot/boot" "${CMAKE_SOURCE_DIR}/data/image.txt" "${CMAKE_BINARY_DIR}/tree"
         DEPENDS
             ep_build
             mkvolume
