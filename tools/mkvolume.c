@@ -1,45 +1,85 @@
+#include <fusee/mfs.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define BUFFERSIZE     4096
-#define PAGE_SIZE      4096
-#define RESERVED_PAGES 64
+#define BUFFERSIZE 4096
 
-static void append(FILE* dst, const char* path)
+typedef struct
+{
+    uint64_t size;
+    union
+    {
+        char*    data;
+        MfsPage* pages;
+    };
+    uint64_t root;
+} MfsVolume;
+
+/*
+static uint64_t alloc_page(FILE* dst)
+{
+    static uint64_t inode;
+    uint64_t        bit;
+    uint64_t        bitmap;
+    uint8_t         tmp;
+
+    inode++;
+    if ((inode % MFS_BITMAP_SIZE) == 0)
+        inode++;
+    bit    = inode % MFS_BITMAP_SIZE;
+    bitmap = inode / MFS_BITMAP_SIZE;
+    fseek(dst, (MFS_RESERVED_PAGES + bitmap) * MFS_PAGE_SIZE + bit / 8, SEEK_SET);
+    fread(&tmp, 1, 1, dst);
+    fseek(dst, (MFS_RESERVED_PAGES + bitmap) * MFS_PAGE_SIZE + bit / 8, SEEK_SET);
+    tmp |= (1 << (bit % 8));
+    fwrite(&tmp, 1, 1, dst);
+    return inode;
+}
+*/
+
+static void make_volume(MfsVolume* volume, int size)
+{
+    MfsPageMetadata* meta;
+
+    /* Adjust the size so it's a multiple of the page size */
+    size         = ((size + MFS_PAGE_SIZE - 1) / MFS_PAGE_SIZE) * MFS_PAGE_SIZE;
+    volume->size = (uint64_t)size;
+    volume->data = calloc(1, size);
+
+    meta = &volume->pages[MSF_METADATA_PAGE].meta;
+    memcpy(meta->magic, MFS_MAGIC, 4);
+    meta->version    = 0x01000000;
+    meta->page_count = volume->size / MFS_PAGE_SIZE;
+}
+
+static void make_vbr(MfsVolume* volume, const char* path)
 {
     FILE*  src;
-    char   buffer[BUFFERSIZE];
     size_t size;
+    char*  dst;
 
     src = fopen(path, "rb");
+    dst = volume->data;
     for (;;)
     {
-        size = fread(buffer, 1, BUFFERSIZE, src);
+        size = fread(dst, 1, BUFFERSIZE, src);
         if (!size)
             break;
-        fwrite(buffer, size, 1, dst);
+        dst += size;
     }
     fclose(src);
 }
 
-static void resize(FILE* f, int size)
+int main(int argc, char** argv)
 {
-    char zero;
+    MfsVolume volume;
 
-    /* Adjust the size so it's a multiple of the page size */
-    size = ((size + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
-    fseek(f, size - 1, SEEK_SET);
-    zero = 0;
-    fwrite(&zero, 1, 1, f);
+    memset(&volume, 0, sizeof(volume));
+    make_volume(&volume, atoi(argv[2]));
 }
 
-static void add_vbr(FILE* f, const char* path)
-{
-    fseek(f, 0, SEEK_SET);
-    append(f, path);
-}
-
+/*
 int main(int argc, char** argv)
 {
     FILE* f;
@@ -50,3 +90,4 @@ int main(int argc, char** argv)
     fclose(f);
     return 0;
 }
+*/

@@ -23,6 +23,7 @@ else()
         DEPENDERS configure
         ALWAYS 1
     )
+    include_directories(include)
     add_subdirectory(tools)
     set(IMAGE   "${CMAKE_BINARY_DIR}/fuseeOS.img")
     set(VOLUME  "${CMAKE_BINARY_DIR}/fuseeOS.vol")
