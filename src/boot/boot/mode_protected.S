@@ -33,8 +33,6 @@ gdt_protected_mode_descriptor:
 /* Switch to protected mode */
 .global switch_mode_protected
 switch_mode_protected:
-    xchg %bx, %bx
-
     /* The return address is 2 bytes */
     /* We need to pad it */
     sub     $30, %sp

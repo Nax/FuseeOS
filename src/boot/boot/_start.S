@@ -56,8 +56,19 @@ start2:
 
     /* enter pmode */
     call switch_mode_protected
+
+    /* Enter main */
 .code32
-    xchg %bx, %bx
+    mov $saved_mbr_record, %eax
+    push %eax
+
+    mov (saved_disk), %eax
+    push %eax
+
+    xor %eax, %eax
+    push %eax
+
+    jmp bmain
 .code16
 
 
@@ -80,7 +91,7 @@ saved_mbr_record:
 .space 16
 
 saved_disk:
-.space 2
+.space 4
 
 .org 0x1fe
 .byte 0x55, 0xaa
