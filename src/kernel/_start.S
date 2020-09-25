@@ -4,8 +4,6 @@
 .section .text
 /* rdi: Kernel args */
 _start:
-    xchg %bx, %bx
-
     /* Set the kernel stack */
     mov $kernel_stack, %rsp
 

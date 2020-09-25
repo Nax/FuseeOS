@@ -36,6 +36,6 @@ typedef struct
         char*    cr3;
         uint64_t cr3_addr;
     };
-} KernelBootParams;
+} _PACKED KernelBootParams;
 
 #endif
