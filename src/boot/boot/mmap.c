@@ -25,7 +25,7 @@ static void mmap64_single(uint64_t physical, uint64_t virtual)
 
     decompose_addr(virtual, &a, &b, &c, &d);
 
-    tmp  = (uint64_t*)g_kernel_params.cr4;
+    tmp  = (uint64_t*)g_kernel_params.cr3;
     tmp2 = tmp[a];
     if (!tmp2)
     {
@@ -54,8 +54,10 @@ void mmap64(void* src, uint64_t dst, uint64_t size)
 {
     uint32_t npages = ((size + 4095) / 4096);
 
-    if (!g_kernel_params.cr4)
-        g_kernel_params.cr4 = zero_page_alloc();
+    if (!g_kernel_params.cr3)
+    {
+        g_kernel_params.cr3 = zero_page_alloc();
+    }
 
     for (uint32_t i = 0; i < npages; ++i)
         mmap64_single((uint32_t)src + i * 4096, dst + i * 4096);

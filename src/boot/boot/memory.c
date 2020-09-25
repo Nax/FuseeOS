@@ -60,7 +60,7 @@ void* memory_alloc(uint32_t size)
     uint32_t base;
 
     npages = (size + PAGESIZE - 1) / PAGESIZE;
-    size   = npages * size;
+    size   = npages * PAGESIZE;
 
     base = 0;
     for (int i = 0; i < 32; ++i)

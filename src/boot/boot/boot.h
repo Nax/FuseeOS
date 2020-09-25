@@ -77,4 +77,6 @@ void mmap64(void* src, uint64_t dst, uint64_t size);
 /* elf */
 uint64_t elf_load(const char* name);
 
+void jump_mode_long(uint64_t entry, uint32_t cr3, KernelBootParams* params);
+
 #endif

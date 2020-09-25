@@ -23,6 +23,12 @@ _NORETURN void bmain(int drive, const PartitionRecord* mbr)
 
     entry = elf_load("/boot/kernel");
 
+    /* Identity map the first few megabytes */
+    mmap64((void*)0, 0, 0x100000);
+
+    /* Jump! */
+    jump_mode_long(entry, (uint32_t)g_kernel_params.cr3, &g_kernel_params);
+
     for (;;)
     {
     }

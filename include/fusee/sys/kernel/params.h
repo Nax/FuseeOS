@@ -33,8 +33,8 @@ typedef struct
     uint64_t initram_size;
     union
     {
-        char*    cr4;
-        uint64_t cr4_addr;
+        char*    cr3;
+        uint64_t cr3_addr;
     };
 } KernelBootParams;
 
