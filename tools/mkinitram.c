@@ -32,7 +32,7 @@ static void save_initram(InitRamDisk* rd, const char* path)
     FILE*    f;
     uint64_t off;
 
-    off               = sizeof(InitRamDisk);
+    off               = sizeof(InitRamHeader);
     rd->header.sh_off = off;
     off += rd->header.sh_size;
     rd->header.fh_off = off;

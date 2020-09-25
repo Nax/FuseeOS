@@ -1,4 +1,5 @@
 #include <boot/boot/boot.h>
+#include <initram.h>
 
 void initram_init(void)
 {
@@ -23,4 +24,23 @@ void initram_init(void)
     print(", size: ");
     puthex32((uint32_t)g_kernel_params.initram_size);
     putchar('\n');
+}
+
+char* initram_lookup(const char* name)
+{
+    char*             base;
+    InitRamHeader*    h;
+    InitRamFileEntry* fe;
+
+    base = g_kernel_params.initram;
+    h    = (InitRamHeader*)base;
+    fe   = (InitRamFileEntry*)(base + h->fh_off);
+
+    for (int i = 0; i < h->fh_cnt; ++i)
+    {
+        if (memcmp(name, base + h->sh_off + fe[i].name_off, fe[i].name_size) == 0)
+            return base + h->data_off + fe[i].data_off;
+    }
+
+    return NULL;
 }

@@ -68,6 +68,7 @@ uint64_t mfs_file_size(uint64_t inode);
 void     mfs_read(char* dst, uint64_t inode);
 
 /* InitRAM */
-void initram_init(void);
+void  initram_init(void);
+char* initram_lookup(const char* name);
 
 #endif

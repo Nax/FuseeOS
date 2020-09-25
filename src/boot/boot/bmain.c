@@ -18,6 +18,11 @@ _NORETURN void bmain(int drive, const PartitionRecord* mbr)
     memory_detect();
     mfs_init();
     initram_init();
+
+    print("Kernel found at ");
+    puthex32((uint32_t)initram_lookup("/boot/kernel"));
+    putchar('\n');
+
     for (;;)
     {
     }
