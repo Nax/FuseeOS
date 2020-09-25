@@ -1,4 +1,4 @@
-#include <boot/boot/boot.h>
+#include <boot/bootloader/boot.h>
 #include <mfs.h>
 
 static MfsPage gMetadata;

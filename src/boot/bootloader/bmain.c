@@ -1,4 +1,4 @@
-#include <boot/boot/boot.h>
+#include <boot/bootloader/boot.h>
 
 KernelBootParams g_kernel_params;
 
@@ -23,7 +23,7 @@ _NORETURN void bmain(int drive, const PartitionRecord* mbr)
 
     entry = elf_load("/boot/kernel");
 
-    /* Identity map the first gigabyte */
+    /* Identity map the first 512MiB */
     mmap64((void*)0, 0, 0x20000000);
 
     /* Jump! */

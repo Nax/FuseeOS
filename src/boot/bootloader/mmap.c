@@ -1,4 +1,4 @@
-#include <boot/boot/boot.h>
+#include <boot/bootloader/boot.h>
 
 static void* zero_page_alloc()
 {

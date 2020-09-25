@@ -77,4 +77,4 @@ lmode:
     mov 4(%esp), %rax
 
     /* Enter the kernel */
-    jmp %rax
+    jmp *%rax

@@ -1,4 +1,4 @@
-#include <boot/boot/boot.h>
+#include <boot/bootloader/boot.h>
 
 #define SCREEN_BUFFER ((short*)0xb8000)
 #define MAX_X         80

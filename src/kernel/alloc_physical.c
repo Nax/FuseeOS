@@ -5,6 +5,10 @@ static uint8_t bootstrap_pages[0x1000 * 16];
 
 void init_physical_memory(void)
 {
+    /* Allocate the buddy for every memory zone */
+    for (int i = 0; i < PMB_COUNT; ++i)
+    {
+    }
 }
 
 uint64_t alloc_phys(int npages)

@@ -1,0 +1,8 @@
+set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/boot.ld")
+file(GLOB_RECURSE SOURCES "*.S" "*.c" "*.h")
+add_executable(bootloader ${SOURCES})
+set_target_properties(bootloader PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
+set(FLAGS -m32 -ffreestanding -nostdlib -mno-sse -mno-sse2)
+target_compile_options(bootloader PRIVATE ${FLAGS})
+target_link_options(bootloader PRIVATE ${FLAGS} -T${LINKER_SCRIPT})
+target_link_libraries(bootloader libc_boot)

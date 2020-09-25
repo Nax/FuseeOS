@@ -1,2 +1,2 @@
 add_subdirectory(mbr)
-add_subdirectory(boot)
+add_subdirectory(bootloader)
