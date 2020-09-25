@@ -1,4 +1,6 @@
-__attribute__((noreturn)) void kmain()
+#include <kernel/kernel.h>
+
+_NORETURN void kmain(KernelBootParams* params)
 {
     for (;;)
     {

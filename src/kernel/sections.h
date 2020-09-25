@@ -1,0 +1,13 @@
+#ifndef KERNEL_SECTIONS_H
+#define KERNEL_SECTIONS_H 1
+
+extern char __KERNEL_IMAGE_START;
+extern char __KERNEL_SECTION_EXEC_START;
+extern char __KERNEL_SECTION_EXEC_END;
+extern char __KERNEL_SECTION_RODATA_START;
+extern char __KERNEL_SECTION_RODATA_END;
+extern char __KERNEL_SECTION_DATA_START;
+extern char __KERNEL_SECTION_DATA_END;
+extern char __KERNEL_IMAGE_END;
+
+#endif

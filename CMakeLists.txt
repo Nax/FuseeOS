@@ -26,37 +26,41 @@ else()
     include_directories(include)
     add_subdirectory(tools)
 
+    set(TREE "${CMAKE_BINARY_DIR}/tree")
+    file(GLOB_RECURSE TREE_FILES "${TREE}/*")
     set(IMAGE   "${CMAKE_BINARY_DIR}/fuseeOS.img")
     set(VOLUME  "${CMAKE_BINARY_DIR}/fuseeOS.vol")
-    set(INITRAM "${CMAKE_BINARY_DIR}/tree/boot/initram")
+    set(INITRAM "${TREE}/boot/initram")
+    list(REMOVE_ITEM TREE_FILES ${INITRAM})
 
     add_custom_command(
         OUTPUT "${INITRAM}"
-        COMMAND mkinitram "${INITRAM}" "${CMAKE_SOURCE_DIR}/data/initram.txt" "${CMAKE_BINARY_DIR}/tree"
+        COMMAND mkinitram "${INITRAM}" "${CMAKE_SOURCE_DIR}/data/initram.txt" "${TREE}"
         DEPENDS
             ep_build
             mkinitram
             "${CMAKE_SOURCE_DIR}/data/initram.txt"
+            "${TREE}"
+            ${TREE_FILES}
         VERBATIM
     )
     add_custom_command(
         OUTPUT "${VOLUME}"
-        COMMAND mkvolume "${VOLUME}" 41943040 "${CMAKE_BINARY_DIR}/tree/boot/boot" "${CMAKE_SOURCE_DIR}/data/image.txt" "${CMAKE_BINARY_DIR}/tree"
+        COMMAND mkvolume "${VOLUME}" 41943040 "${TREE}/boot/boot" "${CMAKE_SOURCE_DIR}/data/image.txt" "${TREE}"
         DEPENDS
             ep_build
             mkvolume
             "${INITRAM}"
-            "${CMAKE_BINARY_DIR}/tree/boot/boot"
             "${CMAKE_SOURCE_DIR}/data/image.txt"
         VERBATIM
     )
     add_custom_command(
         OUTPUT "${IMAGE}"
-        COMMAND mkimage "${IMAGE}" "${CMAKE_BINARY_DIR}/tree/boot/mbr" "${VOLUME}"
+        COMMAND mkimage "${IMAGE}" "${TREE}/boot/mbr" "${VOLUME}"
         DEPENDS
             ep_build
             mkimage
-            "${CMAKE_BINARY_DIR}/tree/boot/mbr"
+            "${TREE}/boot/mbr"
             "${VOLUME}"
         VERBATIM
     )

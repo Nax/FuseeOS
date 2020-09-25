@@ -1,11 +1,11 @@
 #ifndef BOOT_H
 #define BOOT_H 1
 
+#include <kernel/params.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <strings.h>
-#include <sys/kernel.h>
 
 #define PAGESIZE 4096
 
