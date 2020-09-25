@@ -12,6 +12,8 @@ kernel_params_init(int drive, const PartitionRecord* mbr)
 
 _NORETURN void bmain(int drive, const PartitionRecord* mbr)
 {
+    uint64_t entry;
+
     kernel_params_init(drive, mbr);
     screen_init();
     puts("FuseeOS Bootloader\n");
@@ -19,9 +21,7 @@ _NORETURN void bmain(int drive, const PartitionRecord* mbr)
     mfs_init();
     initram_init();
 
-    print("Kernel found at ");
-    puthex32((uint32_t)initram_lookup("/boot/kernel"));
-    putchar('\n');
+    entry = elf_load("/boot/kernel");
 
     for (;;)
     {

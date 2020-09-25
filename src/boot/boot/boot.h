@@ -71,4 +71,10 @@ void     mfs_read(char* dst, uint64_t inode);
 void  initram_init(void);
 char* initram_lookup(const char* name);
 
+/* mmap */
+void mmap64(void* src, uint64_t dst, uint64_t size);
+
+/* elf */
+uint64_t elf_load(const char* name);
+
 #endif
