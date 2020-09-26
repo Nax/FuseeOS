@@ -21,6 +21,15 @@ typedef struct
     uint8_t* bitmap[PMB_MAX_ORDER];
 } PhysicalMemoryBlock;
 
+typedef struct
+{
+    PhysicalMemoryBlock blocks[PMB_COUNT];
+} PhysicalMemoryAllocator;
+
+typedef struct
+{
+} VirtualMemoryAllocator;
+
 void init_physical_mapping(void);
 void init_physical_memory(void);
 

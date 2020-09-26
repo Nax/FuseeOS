@@ -11,9 +11,10 @@
 /* The main kernel structure */
 typedef struct
 {
-    KernelBootParams    boot_params;
-    PhysicalMemoryBlock pmem[PMB_COUNT];
-    uint64_t*           cr3;
+    KernelBootParams        boot_params;
+    PhysicalMemoryAllocator pmem;
+    VirtualMemoryAllocator  vmem;
+    uint64_t*               cr3;
 } Kernel;
 
 extern Kernel gKernel;

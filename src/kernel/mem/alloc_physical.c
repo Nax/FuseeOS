@@ -2,11 +2,12 @@
 
 static void mark_page_free(uint64_t page)
 {
-    uint64_t bitmap_off;
+    PhysicalMemoryAllocator* alloc = &gKernel.pmem;
+    uint64_t                 bitmap_off;
 
     for (int i = 0; i < PMB_COUNT; ++i)
     {
-        PhysicalMemoryBlock* mblock = gKernel.pmem + i;
+        PhysicalMemoryBlock* mblock = alloc->blocks + i;
 
         if (!(page >= mblock->base && page < mblock->base + mblock->npages * PAGESIZE))
             continue;
@@ -32,11 +33,12 @@ static void mark_page_free(uint64_t page)
 
 static void mark_page_used(uint64_t page)
 {
-    uint64_t bitmap_off;
+    PhysicalMemoryAllocator* alloc = &gKernel.pmem;
+    uint64_t                 bitmap_off;
 
     for (int i = 0; i < PMB_COUNT; ++i)
     {
-        PhysicalMemoryBlock* mblock = gKernel.pmem + i;
+        PhysicalMemoryBlock* mblock = alloc->blocks + i;
 
         if (!(page >= mblock->base && page < mblock->base + mblock->npages * PAGESIZE))
             continue;
@@ -55,15 +57,16 @@ static void mark_page_used(uint64_t page)
 
 void init_physical_memory(void)
 {
-    int      i;
-    uint64_t bitmap_size_pages;
+    PhysicalMemoryAllocator* alloc = &gKernel.pmem;
+    int                      i;
+    uint64_t                 bitmap_size_pages;
 
     /* Allocate the buddy for every memory zone */
     i = 0;
     for (;;)
     {
         KernelBootMemRegion* reg    = gKernel.boot_params.mem_map + i;
-        PhysicalMemoryBlock* mblock = gKernel.pmem + i;
+        PhysicalMemoryBlock* mblock = alloc->blocks + i;
 
         if (reg->size == 0)
             break;
@@ -94,10 +97,11 @@ void init_physical_memory(void)
 
 uint64_t alloc_phys_pages(int npages)
 {
-    int      i;
-    uint64_t bitmap_size;
-    uint64_t tmp;
-    uint64_t page;
+    PhysicalMemoryAllocator* alloc = &gKernel.pmem;
+    int                      i;
+    uint64_t                 bitmap_size;
+    uint64_t                 tmp;
+    uint64_t                 page;
 
     if (npages != 1)
         return BADPAGE;
@@ -105,7 +109,7 @@ uint64_t alloc_phys_pages(int npages)
     i = 0;
     for (;;)
     {
-        PhysicalMemoryBlock* mblock = gKernel.pmem + i;
+        PhysicalMemoryBlock* mblock = alloc->blocks + i;
 
         if (mblock->npages == 0)
             break;
