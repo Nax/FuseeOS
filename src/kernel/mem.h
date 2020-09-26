@@ -1,6 +1,7 @@
 #ifndef KERNEL_MEM_H
 #define KERNEL_MEM_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define PAGESIZE 4096
@@ -13,6 +14,14 @@
 #define PML4_PHYSICAL     0x100
 
 #define BADPAGE 0xffffffffffffffffLL
+
+#define MM_READ    0x00000001
+#define MM_WRITE   0x00000002
+#define MM_EXECUTE 0x00000004
+#define MM_USER    0x00000008
+
+#define MMASK_PHYS    0x7ffffffffffff000
+#define MMASK_PROTECT 0x800000000000000e
 
 typedef struct
 {
@@ -28,15 +37,33 @@ typedef struct
 
 typedef struct
 {
+    uint64_t base;
+    uint64_t size;
+} VirtualMemoryBlock;
+
+typedef struct
+{
+    uint64_t            base;
+    uint64_t            free_list_size;
+    uint64_t            free_list_capacity;
+    VirtualMemoryBlock* free_list;
 } VirtualMemoryAllocator;
 
+void init_mem(void);
 void init_physical_mapping(void);
 void init_physical_memory(void);
+void init_virtual_memory(void);
 
-uint64_t alloc_phys_pages(int npages);
+uint64_t
+alloc_phys_pages(int npages);
 uint64_t alloc_phys(uint64_t size);
 uint64_t alloc_phys_early(int npages);
 
+void* alloc_virtual(uint64_t size);
+
 void* physical_to_virtual(uint64_t physical);
+
+void kmprotect(void* ptr, size_t size, int prot);
+void kmprotect_kernel(void);
 
 #endif

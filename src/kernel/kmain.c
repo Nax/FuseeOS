@@ -11,14 +11,12 @@ _NORETURN void kmain(KernelBootParams* params)
 
     init_screen();
     puts("FuseeOS Kernel");
-    init_physical_mapping();
-    puts("Physical memory mapped");
-    init_physical_memory();
-    puts("Physical memory allocator initialized");
+
+    init_mem();
 
     for (;;)
     {
-        puthex64(alloc_phys_pages(1));
-        putchar('\n');
+        //puthex64(alloc_phys_pages(1));
+        //putchar('\n');
     }
 }

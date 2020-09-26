@@ -3,6 +3,7 @@
 
 #include <kernel/mem.h>
 #include <kernel/params.h>
+#include <kernel/sections.h>
 #include <string.h>
 #include <strings.h>
 
