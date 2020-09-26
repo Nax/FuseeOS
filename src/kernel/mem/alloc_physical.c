@@ -1,17 +1,8 @@
 #include <kernel/kernel.h>
 
-_ALIGN(0x1000)
-static uint8_t bootstrap_pages[0x1000 * 16];
-
-static int round_pot(int n)
-{
-    n--;
-}
-
 static void mark_page_free(uint64_t page)
 {
     uint64_t bitmap_off;
-    uint8_t  tmp;
 
     for (int i = 0; i < PMB_COUNT; ++i)
     {
@@ -42,7 +33,6 @@ static void mark_page_free(uint64_t page)
 static void mark_page_used(uint64_t page)
 {
     uint64_t bitmap_off;
-    uint8_t  tmp;
 
     for (int i = 0; i < PMB_COUNT; ++i)
     {

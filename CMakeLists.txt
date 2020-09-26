@@ -18,6 +18,7 @@ ExternalProject_Add_Step(ep_tools reconfigure
         ALWAYS 1
 )
 
+add_compile_options(-Wall)
 add_subdirectory(src)
 
 set(MKINITRAM   "${CMAKE_BINARY_DIR}/bin/mkinitram")

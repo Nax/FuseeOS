@@ -84,7 +84,7 @@ void mfs_read(char* dst, uint64_t inode)
         return;
     mfs_read_page(&gPages[1], gPages[0].file.idata);
     tmp = (npages > MFS_IDATA_POINTERS) ? MFS_IDATA_POINTERS : npages;
-    dst = mfs_read_data(dst, tmp);
+    dst = mfs_read_idata(dst, tmp);
     npages -= tmp;
     if (!npages)
         return;

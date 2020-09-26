@@ -27,7 +27,5 @@ void init_physical_mapping(void)
 
 void* physical_to_virtual(uint64_t physical)
 {
-    uint64_t v;
-
     return (void*)(0xffff800000000000 | physical);
 }
