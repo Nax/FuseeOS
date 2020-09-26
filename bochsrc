@@ -1,5 +1,5 @@
 plugin_ctrl: unmapped=true, biosdev=true, speaker=true, extfpuirq=true, parallel=true, serial=true, gameport=true, iodebug=true
-memory: host=1024, guest=1024
+memory: host=128, guest=128
 boot: disk
 floppy_bootsig_check: disabled=0
 ata0: enabled=true, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14

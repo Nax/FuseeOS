@@ -39,6 +39,9 @@ add_custom_command(
     COMMAND ${MKIMAGE} ${IMAGE} $<TARGET_FILE:mbr> "${VOLUME}"
     DEPENDS
         ep_tools
+        kernel
+        bootloader
+        mbr
         "${CMAKE_SOURCE_DIR}/data/initram.txt"
         "${CMAKE_SOURCE_DIR}/data/image.txt"
     VERBATIM
