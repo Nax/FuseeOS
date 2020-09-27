@@ -16,6 +16,14 @@ _EXTERNC _NORETURN void kmain(KernelBootParams* params)
     init_mem();
     init_screen();
     puts("Memory initialized");
+    print("  Pages: ");
+    puthex64(gKernel.pmem.pages_total);
+    putchar('\n');
+
+    print("  Free:  ");
+    puthex64(gKernel.pmem.pages_free);
+    putchar('\n');
+    putchar('\n');
     print("Screen buffer remapped to ");
     puthex64((uint64_t)gKernel.screenbuf);
     putchar('\n');

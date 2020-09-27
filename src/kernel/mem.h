@@ -39,6 +39,8 @@ typedef struct
 typedef struct
 {
     PhysicalMemoryBlock blocks[PMB_COUNT];
+    uint64_t            pages_total;
+    uint64_t            pages_free;
 } PhysicalMemoryAllocator;
 
 typedef struct

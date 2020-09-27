@@ -74,6 +74,7 @@ void init_physical_memory(void)
         mblock->base      = reg->base;
         mblock->npages    = reg->size / PAGESIZE;
         bitmap_size_pages = (mblock->npages + PAGESIZE * 8 - 1) / (PAGESIZE * 8);
+        alloc->pages_total += mblock->npages;
 
         for (int j = 0; j < PMB_MAX_ORDER; ++j)
         {
@@ -91,6 +92,7 @@ void init_physical_memory(void)
         for (unsigned int j = 0; j < reg->size / PAGESIZE; ++j)
         {
             mark_page_free(reg->base + j * PAGESIZE);
+            alloc->pages_free++;
         }
     }
 }
@@ -128,6 +130,7 @@ uint64_t alloc_phys_pages(int npages)
                     {
                         page = mblock->base + ((j * 64) + k) * PAGESIZE;
                         mark_page_used(page);
+                        alloc->pages_free--;
                         return page;
                     }
                 }
@@ -172,6 +175,7 @@ void free_phys_pages(uint64_t page, size_t npages)
     {
         mark_page_free(page + i * PAGESIZE);
     }
+    gKernel.pmem.pages_free += npages;
 }
 
 void free_phys(uint64_t page, size_t size)
