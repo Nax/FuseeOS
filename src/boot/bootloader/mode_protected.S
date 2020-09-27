@@ -47,6 +47,9 @@ switch_mode_protected:
     mov     %ax, 28(%esp)
     movw    $0, 30(%esp)
 
+    /* Disable interrupts */
+    cli
+
     /* Load a protected mode GDT */
     lgdt (gdt_protected_mode_descriptor)
 

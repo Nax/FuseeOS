@@ -1,22 +1,39 @@
 .code16
 .section .text.start, "ax"
 
+.macro PUTS, str
+push %si
+mov $\str, %si
+call print_bios
+pop %si
+.endm
+
 start:
     /* Disable interrupts */
     cli
 
-    /* Force CS = 0 */
-    jmp $0x00, $start2
-
-start2:
-    /* Set up segments and stack */
+    /* Set up segments */
     xor %ax, %ax
     mov %ax, %ds
     mov %ax, %es
     mov %ax, %fs
     mov %ax, %gs
     mov %ax, %ss
+
+    /* Force CS = 0 */
+    jmp $0x00, $start2
+
+start2:
+    /* Set up the stack */
     mov $0x7c00, %sp
+
+    /* Flush the screen */
+    pusha
+    mov $0x0003, %ax
+    int $0x10
+    popa
+
+    PUTS str_init
 
     /* Save disk number */
     and $0xff, %dx
@@ -69,8 +86,50 @@ start2:
     push %eax
 
     jmp bmain
+
 .code16
 
+/* SI: Str */
+print_bios:
+    pusha
+
+print_bios_loop:
+    /* Move the cursor */
+    push %si
+    xor %bh, %bh
+    mov (cursor_x), %dl
+    mov (cursor_y), %dh
+    incb (cursor_x)
+    mov $0x02, %ah
+    int $0x10
+    pop %si
+
+    /* Print a character */
+    mov  (%si), %al
+    test %al, %al
+    jz print_bios_end
+
+    push %si
+
+    mov $1, %cx
+    mov $0x000f, %bx
+    mov $0x09, %ah
+    int $0x10
+
+    pop %si
+    inc %si
+    jmp print_bios_loop
+
+print_bios_end:
+    movb $0, (cursor_x)
+    incb (cursor_y)
+    popa
+    ret
+
+cursor_x:
+    .byte 0x00
+cursor_y:
+    .byte 0x00
 
 .align 0x10
 DAP:
@@ -92,6 +151,8 @@ saved_mbr_record:
 
 saved_disk:
 .space 4
+
+str_init: .asciz "FuseeOS VBR"
 
 .org 0x1fe
 .byte 0x55, 0xaa

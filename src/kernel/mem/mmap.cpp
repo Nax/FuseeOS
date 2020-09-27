@@ -34,6 +34,15 @@ enum class AlterMode
     UnmapTree = 5,
 };
 
+static uint64_t alloc_zero_page(void)
+{
+    uint64_t page;
+
+    page = alloc_phys_pages(1);
+    bzero(physical_to_virtual(page), PAGESIZE);
+    return page;
+}
+
 template <AlterMode mode, int order>
 struct PageAlterator
 {
@@ -66,7 +75,7 @@ struct PageAlterator
 
             if (order && (mode == AlterMode::Map || mode == AlterMode::MapAnon) && ((tmp & 1) == 0))
             {
-                tmp    = alloc_phys_pages(1) | 0x7;
+                tmp    = alloc_zero_page() | 0x7;
                 dir[i] = tmp;
             }
 
