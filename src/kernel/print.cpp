@@ -9,8 +9,11 @@ int cy;
 
 void init_screen(void)
 {
+    /* Map the screen buffer */
+    gKernel.screenbuf = (uint16_t*)kmmap(nullptr, 0xb8000, MAX_X * MAX_Y * 2, KPROT_READ | KPROT_WRITE, 0);
+
     /* Clear the screen buffer */
-    bzero(SCREEN_BUFFER, MAX_X * MAX_Y * 2);
+    bzero(gKernel.screenbuf, MAX_X * MAX_Y * 2);
 
     /* Reset cursor pos */
     cx = 0;
@@ -28,8 +31,8 @@ void putchar(int c)
     if (cy == MAX_Y)
     {
         cy--;
-        memmove(SCREEN_BUFFER, SCREEN_BUFFER + MAX_X, MAX_X * (MAX_Y - 1) * 2);
-        bzero(SCREEN_BUFFER + MAX_X * (MAX_Y - 1) * 2, MAX_X * 2);
+        memmove(gKernel.screenbuf, gKernel.screenbuf + MAX_X, MAX_X * (MAX_Y - 1) * 2);
+        bzero(gKernel.screenbuf + MAX_X * (MAX_Y - 1), MAX_X * 2);
     }
 
     switch (c)
@@ -39,7 +42,7 @@ void putchar(int c)
         cy++;
         break;
     default:
-        SCREEN_BUFFER[cy * MAX_X + cx] = (0x0f00 | (c & 0xff));
+        gKernel.screenbuf[cy * MAX_X + cx] = (0x0f00 | (c & 0xff));
         cx++;
         break;
     }

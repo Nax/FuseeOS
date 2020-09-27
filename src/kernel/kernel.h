@@ -15,8 +15,11 @@ typedef struct
     KernelBootParams        boot_params;
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
+    uint16_t*               screenbuf;
     uint64_t                nx_mask;
     uint64_t*               cr3;
+    char*                   initram;
+    size_t                  initram_size;
 } Kernel;
 
 extern Kernel gKernel;
