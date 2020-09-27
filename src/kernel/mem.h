@@ -26,6 +26,9 @@
 #define MMASK_PHYS    0x7ffffffffffff000
 #define MMASK_PROTECT 0x800000000000000e
 
+inline static size_t page_count(size_t size) { return (size + PAGESIZE - 1) / PAGESIZE; }
+inline static size_t page_round(size_t size) { return page_count(size) * PAGESIZE; }
+
 typedef struct
 {
     uint64_t base;
@@ -61,12 +64,17 @@ uint64_t alloc_phys_pages(int npages);
 uint64_t alloc_phys(uint64_t size);
 uint64_t alloc_phys_early(int npages);
 
+void free_phys_pages(uint64_t page, size_t npages);
+void free_phys(uint64_t page, size_t size);
+
 void* alloc_virtual(uint64_t size);
 
 void* physical_to_virtual(uint64_t physical);
 
 void  kmprotect(void* ptr, size_t size, int prot);
 void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags);
+void  kmunmap(void* ptr, size_t size);
+void  kmunmap_tree(void* ptr, size_t size);
 void  kmprotect_kernel(void);
 
 #endif

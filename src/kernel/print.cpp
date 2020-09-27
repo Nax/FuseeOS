@@ -7,10 +7,10 @@
 int cx;
 int cy;
 
-void init_screen(void)
+void init_screen_early(void)
 {
     /* Map the screen buffer */
-    gKernel.screenbuf = (uint16_t*)kmmap(nullptr, 0xb8000, MAX_X * MAX_Y * 2, KPROT_READ | KPROT_WRITE, 0);
+    gKernel.screenbuf = (uint16_t*)0xb8000;
 
     /* Clear the screen buffer */
     bzero(gKernel.screenbuf, MAX_X * MAX_Y * 2);
@@ -18,6 +18,12 @@ void init_screen(void)
     /* Reset cursor pos */
     cx = 0;
     cy = 0;
+}
+
+void init_screen(void)
+{
+    /* Remap the screen buffer */
+    gKernel.screenbuf = (uint16_t*)kmmap(nullptr, 0xb8000, MAX_X * MAX_Y * 2, KPROT_READ | KPROT_WRITE, 0);
 }
 
 void putchar(int c)

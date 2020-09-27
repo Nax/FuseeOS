@@ -165,3 +165,16 @@ uint64_t alloc_phys_early(int npages)
 
     return base;
 }
+
+void free_phys_pages(uint64_t page, size_t npages)
+{
+    for (size_t i = 0; i < npages; ++i)
+    {
+        mark_page_free(page + i * PAGESIZE);
+    }
+}
+
+void free_phys(uint64_t page, size_t size)
+{
+    free_phys_pages(page, page_count(size));
+}

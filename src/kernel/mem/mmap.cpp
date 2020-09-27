@@ -16,20 +16,22 @@ static uint64_t sext48(uint64_t v)
 /*
  * Various paging actions are available:
  *
- * Touch   - Set flags on the whole hierarchy
- * Protect - Set flags on pages only
- * Map     - Map contiguous physical pages
- * MapAnon - Map new pages
- * Unmap   - Unmap pages
+ * Touch        - Set flags on the whole hierarchy
+ * Protect      - Set flags on pages only
+ * Map          - Map contiguous physical pages
+ * MapAnon      - Map new pages
+ * Unmap        - Unmap pages
+ * UnmapTree    - Unmap the page tree
  */
 
 enum class AlterMode
 {
-    Touch   = 0,
-    Protect = 1,
-    Map     = 2,
-    MapAnon = 3,
-    Unmap   = 4,
+    Touch     = 0,
+    Protect   = 1,
+    Map       = 2,
+    MapAnon   = 3,
+    Unmap     = 4,
+    UnmapTree = 5,
 };
 
 template <AlterMode mode, int order>
@@ -80,9 +82,21 @@ struct PageAlterator
                 dir[i] = tmp;
             }
 
+            if (order && mode == AlterMode::UnmapTree)
+            {
+                if ((tmp & 1) == 0)
+                    continue;
+            }
+
             if (order)
             {
                 PageAlterator<mode, order - 1>::run((uint64_t*)physical_to_virtual(tmp & MMASK_PHYS), mapping, virt_start, phys_start, npages, flags);
+            }
+
+            if ((!order && mode == AlterMode::Unmap) || (order && mode == AlterMode::UnmapTree))
+            {
+                free_phys_pages(tmp & MMASK_PHYS, 1);
+                dir[i] = 0;
             }
         }
     }
@@ -113,7 +127,7 @@ void alter_pages(void* ptr, uint64_t phys, size_t size, int prot)
     if (!(prot & KPROT_EXECUTE))
         flags |= gKernel.nx_mask;
 
-    PageAlterator<mode, 3>::run(gKernel.cr3, 0, (uint64_t)ptr, phys, (size + PAGESIZE - 1) / PAGESIZE, flags);
+    PageAlterator<mode, 3>::run((uint64_t*)physical_to_virtual((uint64_t)gKernel.cr3), 0, (uint64_t)ptr, phys, (size + PAGESIZE - 1) / PAGESIZE, flags);
     __asm__ __volatile__("mov %0, %%cr3\r\n" ::"a"(gKernel.cr3));
 }
 
@@ -159,7 +173,7 @@ void kmprotect(void* ptr, size_t size, int prot)
 
 void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags)
 {
-    size = ((size + PAGESIZE - 1) / PAGESIZE) * PAGESIZE;
+    size = page_round(size);
 
     if (!ptr && ((flags & KMAP_FIXED) == 0))
     {
@@ -176,6 +190,16 @@ void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags)
     }
 
     return ptr;
+}
+
+void kmunmap(void* ptr, size_t size)
+{
+    alter_pages<AlterMode::Unmap>(ptr, 0, size, 0);
+}
+
+void kmunmap_tree(void* ptr, size_t size)
+{
+    alter_pages<AlterMode::UnmapTree>(ptr, 0, size, 0);
 }
 
 void kmprotect_kernel(void)

@@ -26,6 +26,7 @@ extern Kernel gKernel;
 
 /* print */
 void init_screen(void);
+void init_screen_early(void);
 void putchar(int c);
 void print(const char* str);
 void puts(const char* str);

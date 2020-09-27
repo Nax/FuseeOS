@@ -22,6 +22,16 @@ static void init_nx(void)
     }
 }
 
+static void unmap_lomem(void)
+{
+    /* Free all lomem paging info */
+    kmunmap_tree(nullptr, 0x100000000);
+
+    /* Reclaim the 0x80 pages of low-memory */
+    for (unsigned i = 0; i < 0x80; ++i)
+        free_phys_pages(i * PAGESIZE, 1);
+}
+
 void init_mem(void)
 {
     /* Initialize the memory subsystems */
@@ -32,5 +42,17 @@ void init_mem(void)
     /* Detect availability of the NX flag */
     init_nx();
 
+    /* Remap the kernel */
     kmprotect_kernel();
+
+    /* Copy the initram */
+    gKernel.initram_size = gKernel.boot_params.initram_size;
+    gKernel.initram      = (char*)kmmap(nullptr, 0, gKernel.initram_size, KPROT_READ, KMAP_ANONYMOUS);
+    memcpy(gKernel.initram, gKernel.boot_params.initram, gKernel.initram_size);
+
+    /* Free the original initram */
+    free_phys((uint64_t)gKernel.boot_params.initram, gKernel.initram_size);
+
+    /* Reclaim low-memory */
+    unmap_lomem();
 }
