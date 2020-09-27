@@ -77,7 +77,7 @@ void init_physical_memory(void)
 
         for (int j = 0; j < PMB_MAX_ORDER; ++j)
         {
-            mblock->bitmap[j] = physical_to_virtual(alloc_phys_early(bitmap_size_pages));
+            mblock->bitmap[j] = (uint8_t*)physical_to_virtual(alloc_phys_early(bitmap_size_pages));
             memset(mblock->bitmap[j], 0xff, bitmap_size_pages * PAGESIZE);
             bitmap_size_pages = (bitmap_size_pages + 1) / 2;
         }

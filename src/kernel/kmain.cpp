@@ -2,7 +2,7 @@
 
 Kernel gKernel;
 
-_NORETURN void kmain(KernelBootParams* params)
+_EXTERNC _NORETURN void kmain(KernelBootParams* params)
 {
     bzero(&gKernel, sizeof(gKernel));
 
