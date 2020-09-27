@@ -88,7 +88,7 @@ void init_physical_memory(void)
     for (i = 0; i < 32; ++i)
     {
         KernelBootMemRegion* reg = gKernel.boot_params.mem_free + i;
-        for (int j = 0; j < reg->size / PAGESIZE; ++j)
+        for (unsigned int j = 0; j < reg->size / PAGESIZE; ++j)
         {
             mark_page_free(reg->base + j * PAGESIZE);
         }

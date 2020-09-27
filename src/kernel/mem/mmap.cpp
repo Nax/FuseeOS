@@ -90,6 +90,8 @@ void alter_pages(void* ptr, uint64_t phys, size_t size, int prot)
         flags |= 0x2;
     if (prot & MM_USER)
         flags |= 0x4;
+    if (!(prot & MM_EXECUTE))
+        flags |= gKernel.nx_mask;
 
     PageAlterator<mode, 3>::run(gKernel.cr3, 0, (uint64_t)ptr, phys, (size + PAGESIZE - 1) / PAGESIZE, flags);
 }
@@ -138,6 +140,7 @@ void kmprotect_kernel(void)
 {
     kmtouch(&__KERNEL_IMAGE_START, &__KERNEL_IMAGE_END - &__KERNEL_IMAGE_START, MM_READ | MM_WRITE | MM_EXECUTE);
     kmprotect(&__KERNEL_SECTION_EXEC_START, &__KERNEL_SECTION_EXEC_END - &__KERNEL_SECTION_EXEC_START, MM_READ | MM_EXECUTE);
-    kmprotect(&__KERNEL_SECTION_DATA_START, &__KERNEL_SECTION_DATA_END - &__KERNEL_SECTION_DATA_START, MM_READ | MM_WRITE);
     kmprotect(&__KERNEL_SECTION_RODATA_START, &__KERNEL_SECTION_RODATA_END - &__KERNEL_SECTION_RODATA_START, MM_READ);
+    kmprotect(&__KERNEL_SECTION_DATA_START, &__KERNEL_SECTION_DATA_END - &__KERNEL_SECTION_DATA_START, MM_READ | MM_WRITE);
+    kmprotect(&__KERNEL_SECTION_BSS_START, &__KERNEL_SECTION_BSS_END - &__KERNEL_SECTION_BSS_START, MM_READ | MM_WRITE);
 }

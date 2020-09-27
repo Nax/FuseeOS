@@ -8,6 +8,8 @@ extern char __KERNEL_SECTION_RODATA_START;
 extern char __KERNEL_SECTION_RODATA_END;
 extern char __KERNEL_SECTION_DATA_START;
 extern char __KERNEL_SECTION_DATA_END;
+extern char __KERNEL_SECTION_BSS_START;
+extern char __KERNEL_SECTION_BSS_END;
 extern char __KERNEL_IMAGE_END;
 
 #endif
