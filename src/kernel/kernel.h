@@ -35,4 +35,7 @@ void puthex16(uint16_t v);
 void puthex32(uint32_t v);
 void puthex64(uint64_t v);
 
+/* gdt */
+void init_gdt(void);
+
 #endif
