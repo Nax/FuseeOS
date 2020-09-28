@@ -16,9 +16,9 @@ static void init_nx(void)
         gKernel.nx_mask = 0x8000000000000000;
 
         /* Enable the feature in EFER */
-        tmp = rdmsr(MSR_IA32_EFER);
+        tmp = rdmsr(X86_MSR_EFER);
         tmp |= (1 << 11);
-        wrmsr(MSR_IA32_EFER, tmp);
+        wrmsr(X86_MSR_EFER, tmp);
     }
 }
 

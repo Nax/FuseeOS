@@ -38,4 +38,6 @@ void puthex64(uint64_t v);
 /* gdt */
 void init_gdt(void);
 
+void arch_init(void);
+
 #endif

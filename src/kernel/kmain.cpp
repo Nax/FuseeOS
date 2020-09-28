@@ -13,8 +13,7 @@ _EXTERNC _NORETURN void kmain(KernelBootParams* params)
     puts("FuseeOS Kernel");
     putchar('\n');
 
-    init_gdt();
-    puts("GDT initialized");
+    arch_init();
 
     init_mem();
     init_screen();
