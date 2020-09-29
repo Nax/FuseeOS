@@ -115,3 +115,20 @@ void puthex64(uint64_t v)
         v <<= 4;
     }
 }
+
+static void _putu(int64_t v)
+{
+    if (v >= 10)
+        _putu(v / 10);
+    else if (v == 0)
+        return;
+    putchar(hex_chars[v % 10]);
+}
+
+void putu(int64_t v)
+{
+    if (v == 0)
+        putchar('0');
+    else
+        _putu(v);
+}

@@ -1,6 +1,6 @@
 set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/kernel.ld")
 file(GLOB_RECURSE SOURCES "*.c" "*.cpp" "*.S")
-set(FLAGS -mcmodel=kernel -mno-red-zone -nostdlib -ffreestanding -fno-exceptions -fno-rtti)
+set(FLAGS -mcmodel=kernel -mno-red-zone -nostdlib -ffreestanding -fno-exceptions -fno-rtti -fno-threadsafe-statics -std=c++14)
 add_executable(kernel ${SOURCES})
 set_target_properties(kernel PROPERTIES LINK_DEPENDS ${LINKER_SCRIPT})
 target_compile_options(kernel PRIVATE ${FLAGS})

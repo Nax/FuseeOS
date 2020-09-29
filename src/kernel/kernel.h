@@ -1,6 +1,7 @@
 #ifndef KERNEL_H
 #define NERNEL_H 1
 
+#include <kernel/arch.h>
 #include <kernel/mem.h>
 #include <kernel/params.h>
 #include <kernel/sections.h>
@@ -34,6 +35,7 @@ void puthex8(uint8_t v);
 void puthex16(uint16_t v);
 void puthex32(uint32_t v);
 void puthex64(uint64_t v);
+void putu(int64_t v);
 
 /* gdt */
 void init_gdt(void);
