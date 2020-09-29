@@ -6,15 +6,28 @@ AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
 AlignConsecutiveMacros: true
 AllowShortIfStatementsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortBlocksOnASingleLine: true
 AlwaysBreakTemplateDeclarations: No
 BinPackArguments: false
 BinPackParameters: false
-BreakBeforeBraces: Allman
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterEnum: true
+    AfterStruct: true
+    AfterClass: true
+    AfterControlStatement: true
+    AfterFunction: true
+    AfterNamespace: true
+    AfterUnion: true
+    AfterExternBlock: true
+    SplitEmptyFunction: false
+    SplitEmptyRecord: false
+    SplitEmptyNamespace: false
 BreakConstructorInitializersBeforeComma: true
 ColumnLimit: 0
 ConstructorInitializerIndentWidth: 0
 Cpp11BracedListStyle: true
-DerivePointerAlignment: false
 IndentWidth: 4
 NamespaceIndentation: None
 PointerAlignment: Left

@@ -38,7 +38,6 @@ struct Emu8086
 {
     Emu8086Reg regs[10];
     uint16_t   sregs[6];
-    int8_t     seg_override;
 
     volatile uint8_t* bios;
     uint8_t           ivt[0x400];
@@ -68,6 +67,8 @@ struct Emu8086ModRM
         int16_t disp16;
         int32_t disp32;
     };
+
+    int8_t seg_override;
 };
 
 void emu8086_init();

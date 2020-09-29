@@ -42,4 +42,49 @@ inline static void wrmsr(uint32_t msr, uint64_t value)
     ASM("wrmsr\r\n" ::"c"(msr), "a"(lo), "d"(hi));
 }
 
+inline static uint8_t in8(uint16_t port)
+{
+    uint8_t v;
+
+    ASM("inb %1, %0\r\n"
+        : "=a"(v)
+        : "Nd"(port));
+    return v;
+}
+
+inline static uint16_t in16(uint16_t port)
+{
+    uint16_t v;
+
+    ASM("inw %1, %0\r\n"
+        : "=a"(v)
+        : "Nd"(port));
+    return v;
+}
+
+inline static uint32_t in32(uint16_t port)
+{
+    uint32_t v;
+
+    ASM("inl %1, %0\r\n"
+        : "=a"(v)
+        : "Nd"(port));
+    return v;
+}
+
+inline static void out8(uint16_t port, uint8_t value)
+{
+    ASM("outb %0, %1\r\n" ::"a"(value), "Nd"(port));
+}
+
+inline static void out16(uint16_t port, uint16_t value)
+{
+    ASM("outw %0, %1\r\n" ::"a"(value), "Nd"(port));
+}
+
+inline static void out32(uint16_t port, uint32_t value)
+{
+    ASM("outl %0, %1\r\n" ::"a"(value), "Nd"(port));
+}
+
 #endif
