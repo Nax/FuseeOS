@@ -38,9 +38,7 @@ struct Emu8086
 {
     Emu8086Reg regs[10];
     uint16_t   sregs[6];
-    bool       a32 : 1;
-    bool       o32 : 1;
-    bool       lock : 1;
+    int8_t     seg_override;
 
     volatile uint8_t* bios;
     uint8_t           ivt[0x400];
