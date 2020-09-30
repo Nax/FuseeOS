@@ -499,14 +499,20 @@ template <typename T> void op_jump(bool cond)
     if (cond) gEmu.regs[X86_EMU_EIP].i32 += sext32(imm);
 }
 
-template <typename otype, typename atype>
-static uint32_t string_addr(uint8_t seg, uint8_t reg, atype count, atype offset)
+template <typename atype> static uint32_t seg_addr_ind(uint16_t reg_seg, uint16_t reg_base)
 {
-    atype rev_offset;
+    return seg_addr(read_reg<atype>(reg_base), gEmu.sregs[reg_seg]);
+}
 
-    rev_offset = count - offset - 1;
-    offset     = (gEmu.regs[X86_EMU_EFLAGS].u32 & X86_FLAG_DF) ? rev_offset : offset;
-    return seg_addr(read_reg<atype>(reg) + offset * sizeof(otype), read_sreg(seg));
+template <typename otype, typename atype> static uint32_t seg_addr_ind_autoinc(uint16_t reg_seg, uint16_t reg_base)
+{
+    uint32_t addr;
+    int      inc;
+
+    addr = seg_addr_ind<atype>(reg_seg, reg_base);
+    inc  = (gEmu.regs[X86_EMU_EFLAGS].u32 & X86_FLAG_DF) ? -(sizeof(otype)) : sizeof(otype);
+    write_reg<atype>(reg_base, read_reg<atype>(reg_base) + inc);
+    return addr;
 }
 
 template <typename otype, typename atype> static bool exec_instruction(uint16_t op, int8_t seg_override)
@@ -960,6 +966,18 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         read_ipmodrm<atype>(&modrm, seg_override);
         op_and(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg));
         break;
+    case 0x86: /* XCHG r8,r/m8 */
+        read_ipmodrm<atype>(&modrm, seg_override);
+        imm8 = read_reg<uint8_t>(modrm.reg);
+        write_reg<uint8_t>(modrm.reg, read_modrm<uint8_t, uint8_t>(&modrm));
+        write_modrm<uint8_t, uint8_t>(&modrm, imm8);
+        break;
+    case 0x87: /* XCHG r16,r/m16 */
+        read_ipmodrm<atype>(&modrm, seg_override);
+        imm = read_reg<otype>(modrm.reg);
+        write_reg<otype>(modrm.reg, read_modrm<otype, atype>(&modrm));
+        write_modrm<otype, atype>(&modrm, imm);
+        break;
     case 0x88: /* MOV r/m8,r8 */
         read_ipmodrm<uint8_t>(&modrm, seg_override);
         write_modrm<uint8_t, uint8_t>(&modrm, read_reg<uint8_t>(modrm.reg));
@@ -1017,6 +1035,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         write<otype>(seg_addr(addr, gEmu.sregs[seg_override > -1 ? seg_override : X86_EMU_DS]),
                      read_reg<otype>(X86_EMU_EAX));
         break;
+    case 0xa4: /* MOVS m8 */
+        addr_src = seg_addr_ind_autoinc<uint8_t, atype>(X86_EMU_DS, X86_EMU_ESI);
+        addr_dst = seg_addr_ind_autoinc<uint8_t, atype>(X86_EMU_ES, X86_EMU_EDI);
+        write<uint8_t>(addr_dst, read<uint8_t>(addr_src));
+        break;
+    case 0xa5: /* MOVS m16 */
+        addr_src = seg_addr_ind_autoinc<otype, atype>(X86_EMU_DS, X86_EMU_ESI);
+        addr_dst = seg_addr_ind_autoinc<otype, atype>(X86_EMU_ES, X86_EMU_EDI);
+        write<otype>(addr_dst, read<otype>(addr_src));
+        break;
     case 0xa8: /* TEST AL,imm8 */
         read_ip<uint8_t>(&imm8);
         op_and((uint8_t)gEmu.regs[X86_EMU_EAX].u32, imm8);
@@ -1024,6 +1052,24 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
     case 0xa9: /* TEST AX,imm16 */
         read_ip<otype>(&imm);
         op_and((otype)gEmu.regs[X86_EMU_EAX].u32, imm);
+        break;
+    case 0xaa: /* STOS m8 */
+        imm8     = read_reg<uint8_t>(X86_EMU_EAX);
+        addr_dst = seg_addr_ind_autoinc<uint8_t, atype>(X86_EMU_ES, X86_EMU_EDI);
+        write(addr_dst, imm8);
+        break;
+    case 0xab: /* STOS m16 */
+        imm      = read_reg<otype>(X86_EMU_EAX);
+        addr_dst = seg_addr_ind_autoinc<otype, atype>(X86_EMU_ES, X86_EMU_EDI);
+        write(addr_dst, imm);
+        break;
+    case 0xac: /* LODS m8 */
+        addr_src = seg_addr_ind_autoinc<uint8_t, atype>(X86_EMU_DS, X86_EMU_ESI);
+        write_reg<uint8_t>(X86_EMU_EAX, read<uint8_t>(addr_src));
+        break;
+    case 0xad: /* LODS m16 */
+        addr_src = seg_addr_ind_autoinc<otype, atype>(X86_EMU_DS, X86_EMU_ESI);
+        write_reg<otype>(X86_EMU_EAX, read<otype>(addr_src));
         break;
     case 0xb0:
     case 0xb1:
@@ -1326,41 +1372,67 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
     case 0x1a8: /* PUSH GS */
         push<otype>(gEmu.sregs[X86_EMU_GS]);
         break;
-    case 0x2ab:
+    case 0x2a4:
     case 0x4a4: /* REP MOVS m8 */
         count = read_reg<atype>(X86_EMU_ECX);
         for (atype i = 0; i < count; ++i)
         {
-            addr_src = string_addr<uint8_t, atype>(X86_EMU_DS, X86_EMU_ESI, count, i);
-            addr_dst = string_addr<uint8_t, atype>(X86_EMU_ES, X86_EMU_EDI, count, i);
+            addr_src = seg_addr_ind_autoinc<uint8_t, atype>(X86_EMU_DS, X86_EMU_ESI);
+            addr_dst = seg_addr_ind_autoinc<uint8_t, atype>(X86_EMU_ES, X86_EMU_EDI);
             write<uint8_t>(addr_dst, read<uint8_t>(addr_src));
         }
         write_reg<atype>(X86_EMU_ECX, 0);
         break;
+    case 0x2a5:
     case 0x4a5: /* REP MOVS m16 */
         count = read_reg<atype>(X86_EMU_ECX);
         for (atype i = 0; i < count; ++i)
         {
-            addr_src = string_addr<otype, atype>(X86_EMU_DS, X86_EMU_ESI, count, i);
-            addr_dst = string_addr<otype, atype>(X86_EMU_ES, X86_EMU_EDI, count, i);
+            addr_src = seg_addr_ind_autoinc<otype, atype>(X86_EMU_DS, X86_EMU_ESI);
+            addr_dst = seg_addr_ind_autoinc<otype, atype>(X86_EMU_ES, X86_EMU_EDI);
             write<otype>(addr_dst, read<otype>(addr_src));
         }
         write_reg<atype>(X86_EMU_ECX, 0);
         break;
+    case 0x2aa:
     case 0x4aa: /* REP STOS m8 */
         count = read_reg<atype>(X86_EMU_ECX);
+        imm8  = read_reg<uint8_t>(X86_EMU_EAX);
         for (atype i = 0; i < count; ++i)
         {
-            write<uint8_t>(string_addr<uint8_t, atype>(X86_EMU_ES, X86_EMU_EDI, count, i),
-                           read_reg<uint8_t>(X86_EMU_EAX));
+            addr_dst = seg_addr_ind_autoinc<uint8_t, atype>(X86_EMU_ES, X86_EMU_EDI);
+            write(addr_dst, imm8);
         }
         write_reg<atype>(X86_EMU_ECX, 0);
         break;
+    case 0x2ab:
     case 0x4ab: /* REP STOS m16 */
+        count = read_reg<atype>(X86_EMU_ECX);
+        imm   = read_reg<otype>(X86_EMU_EAX);
+        for (atype i = 0; i < count; ++i)
+        {
+            addr_dst = seg_addr_ind_autoinc<otype, atype>(X86_EMU_ES, X86_EMU_EDI);
+            write(addr_dst, imm);
+        }
+        write_reg<atype>(X86_EMU_ECX, 0);
+        break;
+    case 0x2ac:
+    case 0x4ac: /* REP LODS m8 */
         count = read_reg<atype>(X86_EMU_ECX);
         for (atype i = 0; i < count; ++i)
         {
-            write<otype>(string_addr<otype, atype>(X86_EMU_ES, X86_EMU_EDI, count, i), read_reg<otype>(X86_EMU_EAX));
+            addr_src = seg_addr_ind_autoinc<uint8_t, atype>(X86_EMU_DS, X86_EMU_ESI);
+            write_reg<uint8_t>(X86_EMU_EAX, read<uint8_t>(addr_src));
+        }
+        write_reg<atype>(X86_EMU_ECX, 0);
+        break;
+    case 0x2ad:
+    case 0x4ad: /* REP LODS m16 */
+        count = read_reg<atype>(X86_EMU_ECX);
+        for (atype i = 0; i < count; ++i)
+        {
+            addr_src = seg_addr_ind_autoinc<otype, atype>(X86_EMU_DS, X86_EMU_ESI);
+            write_reg<otype>(X86_EMU_EAX, read<otype>(addr_src));
         }
         write_reg<atype>(X86_EMU_ECX, 0);
         break;
