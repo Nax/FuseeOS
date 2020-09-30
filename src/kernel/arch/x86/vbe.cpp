@@ -11,8 +11,7 @@ static uint16_t vbe_pick_mode(uint16_t modes_seg, uint16_t modes_base)
     emu8086_read(modes, modes_seg, modes_base, sizeof(modes));
     for (int i = 0; i < 64; ++i)
     {
-        if (modes[i] == 0xffff)
-            break;
+        if (modes[i] == 0xffff) break;
 
         args.eax = 0x4f01;
         args.ecx = modes[i];
@@ -22,11 +21,9 @@ static uint16_t vbe_pick_mode(uint16_t modes_seg, uint16_t modes_base)
         emu8086_bios_int(0x10, &args);
         emu8086_read(&mode_info, 0x0c, 0x0000, sizeof(mode_info));
 
-        if (!(mode_info.attr & 0x90))
-            continue;
+        if (!(mode_info.attr & 0x90)) continue;
 
-        if (!(mode_info.memory_model == 4 || mode_info.memory_model == 6))
-            continue;
+        if (!(mode_info.memory_model == 4 || mode_info.memory_model == 6)) continue;
 
         putu(mode_info.xres);
         putchar('x');
@@ -35,9 +32,18 @@ static uint16_t vbe_pick_mode(uint16_t modes_seg, uint16_t modes_base)
         putu(mode_info.bpp);
         puts("bpp");
 
-        if (mode_info.xres == 1920 && mode_info.yres == 1080 && mode_info.bpp == 24)
+        if (mode_info.xres == 1920 && mode_info.yres == 1080 && mode_info.bpp == 32)
         {
-            return modes[i];
+            args.eax = 0x4f02;
+            args.ebx = modes[i] | 0x4000;
+            args.es  = 0;
+            args.edi = 0;
+            emu8086_bios_int(0x10, &args);
+
+            video_set_graphical_mode(
+                mode_info.physbase, mode_info.xres, mode_info.yres, mode_info.bpp, mode_info.pitch);
+
+            return 0;
         }
     }
     return 0xffff;
@@ -48,7 +54,6 @@ void vbe_init(void)
     Emu8086BiosArgs args;
     VbeInfoBlock    info;
     char            oem[256];
-    uint16_t        mode;
 
     args.eax = 0x4f00;
     args.es  = 0x0c;
@@ -62,11 +67,5 @@ void vbe_init(void)
     print(oem);
     putchar('\n');
 
-    mode = vbe_pick_mode(info.video_modes_ptr[1], info.video_modes_ptr[0]);
-
-    args.eax = 0x4f02;
-    args.ebx = mode | 0x4000;
-    args.es  = 0;
-    args.edi = 0;
-    emu8086_bios_int(0x10, &args);
+    vbe_pick_mode(info.video_modes_ptr[1], info.video_modes_ptr[0]);
 }

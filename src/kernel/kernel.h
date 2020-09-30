@@ -5,6 +5,7 @@
 #include <kernel/mem.h>
 #include <kernel/params.h>
 #include <kernel/sections.h>
+#include <kernel/video/video.h>
 #include <string.h>
 #include <strings.h>
 
@@ -16,6 +17,7 @@ typedef struct
     KernelBootParams        boot_params;
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
+    Video                   video;
     uint16_t*               screenbuf;
     uint64_t                nx_mask;
     uint64_t*               cr3;
@@ -26,8 +28,6 @@ typedef struct
 extern Kernel gKernel;
 
 /* print */
-void init_screen(void);
-void init_screen_early(void);
 void putchar(int c);
 void print(const char* str);
 void puts(const char* str);

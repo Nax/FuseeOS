@@ -35,7 +35,6 @@ static void unmap_lomem(void)
 void init_mem(void)
 {
     /* Initialize the memory subsystems */
-    init_physical_mapping();
     init_physical_memory();
     init_virtual_memory();
 

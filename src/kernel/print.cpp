@@ -1,58 +1,10 @@
 #include <kernel/kernel.h>
 
-#define SCREEN_BUFFER ((short*)0xb8000)
-#define MAX_X         80
-#define MAX_Y         25
-
-int cx;
-int cy;
-
-void init_screen_early(void)
-{
-    /* Map the screen buffer */
-    gKernel.screenbuf = (uint16_t*)0xb8000;
-
-    /* Clear the screen buffer */
-    bzero(gKernel.screenbuf, MAX_X * MAX_Y * 2);
-
-    /* Reset cursor pos */
-    cx = 0;
-    cy = 0;
-}
-
-void init_screen(void)
-{
-    /* Remap the screen buffer */
-    gKernel.screenbuf = (uint16_t*)kmmap(nullptr, 0xb8000, MAX_X * MAX_Y * 2, KPROT_READ | KPROT_WRITE, 0);
-}
+static const char* const hex_chars = "0123456789abcdef";
 
 void putchar(int c)
 {
-    if (cx == MAX_X)
-    {
-        cx = 0;
-        cy++;
-    }
-
-    if (cy == MAX_Y)
-    {
-        cy--;
-        memmove(gKernel.screenbuf, gKernel.screenbuf + MAX_X, MAX_X * (MAX_Y - 1) * 2);
-        bzero(gKernel.screenbuf + MAX_X * (MAX_Y - 1), MAX_X * 2);
-    }
-
-    switch (c)
-    {
-    case '\n':
-        cx = 0;
-        cy++;
-        break;
-    default:
-        gKernel.screenbuf[cy * MAX_X + cx] = (0x0f00 | (c & 0xff));
-        cx++;
-        break;
-    }
-
+    video_putchar(c);
     out8(0xe9, c);
 }
 
@@ -69,8 +21,6 @@ void print(const char* str)
         putchar(c);
     }
 }
-
-static const char* const hex_chars = "0123456789abcdef";
 
 void puts(const char* str)
 {

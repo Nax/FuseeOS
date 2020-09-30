@@ -9,7 +9,9 @@ _EXTERNC _NORETURN void kmain(KernelBootParams* params)
     /* Copy the boot parameters */
     memcpy(&gKernel.boot_params, params, sizeof(KernelBootParams));
 
-    init_screen_early();
+    init_physical_mapping();
+
+    video_init();
     puts("FuseeOS Kernel");
     putchar('\n');
 
