@@ -52,6 +52,8 @@ void putchar(int c)
         cx++;
         break;
     }
+
+    out8(0xe9, c);
 }
 
 void print(const char* str)

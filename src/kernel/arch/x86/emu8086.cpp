@@ -488,8 +488,10 @@ static T op_inc(T a, int incr)
     return res;
 }
 
-template <typename T>
-static T op_in(uint16_t port)
+template <typename T> static T op_in(uint16_t port);
+
+template <>
+uint8_t op_in<uint8_t>(uint16_t port)
 {
     return in8(port);
 }
@@ -506,8 +508,10 @@ uint32_t op_in<uint32_t>(uint16_t port)
     return in32(port);
 }
 
-template <typename T>
-static void op_out(uint16_t port, T value)
+template <typename T> static void op_out(uint16_t port, T value);
+
+template <>
+void op_out<uint8_t>(uint16_t port, uint8_t value)
 {
     out8(port, value);
 }
@@ -612,6 +616,7 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
     uint8_t      imm8;
     otype        imm;
     atype        count;
+    atype        addr;
 
     switch (op)
     {
@@ -1094,6 +1099,14 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
     case 0x9d: /* POPF */
         write_reg<otype>(X86_EMU_EFLAGS, pop<otype>());
         break;
+    case 0xa2: /* MOV moffs8,AL */
+        read_ip<atype>(&addr);
+        write<uint8_t>(seg_addr(addr, gEmu.sregs[seg_override > -1 ? seg_override : X86_EMU_DS]), read_reg<uint8_t>(X86_EMU_EAX));
+        break;
+    case 0xa3: /* MOV moffs16,AX */
+        read_ip<atype>(&addr);
+        write<otype>(seg_addr(addr, gEmu.sregs[seg_override > -1 ? seg_override : X86_EMU_DS]), read_reg<otype>(X86_EMU_EAX));
+        break;
     case 0xb0:
     case 0xb1:
     case 0xb2:
@@ -1125,29 +1138,31 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
         case 6: /* SHL r/m16 */
             write_modrm<uint8_t, uint8_t>(&modrm, op_shl(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
             break;
-        case 5:
+        case 5: /* SRL r/m16 */
             write_modrm<uint8_t, uint8_t>(&modrm, op_shr(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
             break;
         default:
             NOT_IMPLEMENTED(modrm.reg);
             break;
         }
+        break;
     case 0xc3: /* RET */
         gEmu.regs[X86_EMU_EIP].u32 = pop<otype>();
         break;
     case 0xcd: /* INT imm8 */
         read_ip<uint8_t>(&imm8);
-        push<uint16_t>(gEmu.regs[X86_EMU_EFLAGS].u16);
-        push<uint16_t>(gEmu.sregs[X86_EMU_CS]);
-        push<uint16_t>(gEmu.regs[X86_EMU_EIP].u16);
+
+        push<otype>(gEmu.regs[X86_EMU_EFLAGS].u32);
+        push<otype>(gEmu.sregs[X86_EMU_CS]);
+        push<otype>(gEmu.regs[X86_EMU_EIP].u32);
         gEmu.regs[X86_EMU_EFLAGS].u32 &= ~(X86_FLAG_IF | X86_FLAG_TF | X86_FLAG_AC);
         gEmu.regs[X86_EMU_EIP].u32 = ((uint16_t*)gEmu.ivt)[imm8 * 2 + 0];
         gEmu.sregs[X86_EMU_CS]     = ((uint16_t*)gEmu.ivt)[imm8 * 2 + 1];
         break;
     case 0xcf: /* IRET */
-        gEmu.regs[X86_EMU_EIP].u16 = pop<uint16_t>();
-        gEmu.sregs[X86_EMU_CS]     = pop<uint16_t>();
-        write_reg<uint16_t>(X86_EMU_EFLAGS, pop<uint16_t>());
+        gEmu.regs[X86_EMU_EIP].u32 = pop<otype>();
+        gEmu.sregs[X86_EMU_CS]     = pop<otype>();
+        write_reg<otype>(X86_EMU_EFLAGS, pop<otype>());
 
         if (seg_addr(gEmu.regs[X86_EMU_EIP].u16, gEmu.sregs[X86_EMU_CS]) == X86_EMU_NULLRET)
             return true;
@@ -1453,7 +1468,12 @@ void emu8086_init()
     puts("Initialized 8086 emulator");
 
     Emu8086BiosArgs args;
+
     args.eax = 0x0081;
+    emu8086_bios_int(0x10, &args);
+
+    args.eax = 0x0100;
+    args.ecx = 0x2607;
     emu8086_bios_int(0x10, &args);
 }
 
