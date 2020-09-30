@@ -1181,6 +1181,29 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
             break;
         }
         break;
+    case 0xe0: /* LOOPNZ */
+        read_ip<uint8_t>(&imm8);
+        write_reg<atype>(X86_EMU_ECX, read_reg<atype>(X86_EMU_ECX) - 1);
+        if (read_reg<atype>(X86_EMU_ECX) != 0 && !test_flags(X86_FLAG_ZF))
+            write_reg<otype>(X86_EMU_EIP, read_reg<otype>(X86_EMU_EIP) + (int8_t)imm8);
+        break;
+    case 0xe1: /* LOOPZ */
+        read_ip<uint8_t>(&imm8);
+        write_reg<atype>(X86_EMU_ECX, read_reg<atype>(X86_EMU_ECX) - 1);
+        if (read_reg<atype>(X86_EMU_ECX) != 0 && test_flags(X86_FLAG_ZF))
+            write_reg<otype>(X86_EMU_EIP, read_reg<otype>(X86_EMU_EIP) + (int8_t)imm8);
+        break;
+    case 0xe2: /* LOOP */
+        read_ip<uint8_t>(&imm8);
+        write_reg<atype>(X86_EMU_ECX, read_reg<atype>(X86_EMU_ECX) - 1);
+        if (read_reg<atype>(X86_EMU_ECX) != 0)
+            write_reg<otype>(X86_EMU_EIP, read_reg<otype>(X86_EMU_EIP) + (int8_t)imm8);
+        break;
+    case 0xe3: /* JCXZ */
+        read_ip<uint8_t>(&imm8);
+        if (read_reg<atype>(X86_EMU_ECX) == 0)
+            write_reg<otype>(X86_EMU_EIP, read_reg<otype>(X86_EMU_EIP) + (int8_t)imm8);
+        break;
     case 0xe4: /* IN AL,imm8 */
         read_ip<uint8_t>(&imm8);
         gEmu.regs[X86_EMU_EAX].u8 = op_in<uint8_t>(imm8);
