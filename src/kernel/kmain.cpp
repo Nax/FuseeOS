@@ -26,13 +26,10 @@ _EXTERNC _NORETURN void kmain(KernelBootParams* params)
     puthex64(gKernel.pmem.pages_free);
     putchar('\n');
     putchar('\n');
-    print("Screen buffer remapped to ");
-    puthex64((uint64_t)gKernel.screenbuf);
-    putchar('\n');
 
     for (;;)
     {
-        //puthex64(alloc_phys_pages(1));
-        //putchar('\n');
+        // puthex64(alloc_phys_pages(1));
+        // putchar('\n');
     }
 }

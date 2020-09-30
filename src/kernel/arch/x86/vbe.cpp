@@ -25,13 +25,6 @@ static uint16_t vbe_pick_mode(uint16_t modes_seg, uint16_t modes_base)
 
         if (!(mode_info.memory_model == 4 || mode_info.memory_model == 6)) continue;
 
-        putu(mode_info.xres);
-        putchar('x');
-        putu(mode_info.yres);
-        putchar(' ');
-        putu(mode_info.bpp);
-        puts("bpp");
-
         if (mode_info.xres == 1920 && mode_info.yres == 1080 && mode_info.bpp == 32)
         {
             args.eax = 0x4f02;

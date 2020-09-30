@@ -18,7 +18,6 @@ typedef struct
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
     Video                   video;
-    uint16_t*               screenbuf;
     uint64_t                nx_mask;
     uint64_t*               cr3;
     char*                   initram;
