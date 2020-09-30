@@ -34,7 +34,9 @@ static uint8_t read_byte(uint32_t addr)
     if (addr >= 0x400 && addr < 0x500)
         return gEmu.bda[addr - 0x400];
     if (addr >= 0x8000 && addr < 0x9000)
-        return gEmu.ram[addr - 0x8000];
+        return gEmu.stack[addr - 0x8000];
+    if (addr >= 0xc000 && addr < 0x10000)
+        return gEmu.ram[addr - 0xc000];
     if (addr >= 0x80000 && addr < 0xa0000)
         return gEmu.ebda[addr - 0x80000];
     if (addr >= 0xa0000)
@@ -66,7 +68,9 @@ static void write_byte(uint32_t addr, uint8_t value)
     else if (addr >= 0x400 && addr < 0x500)
         gEmu.bda[addr - 0x400] = value;
     else if (addr >= 0x8000 && addr < 0x9000)
-        gEmu.ram[addr - 0x8000] = value;
+        gEmu.stack[addr - 0x8000] = value;
+    else if (addr >= 0xc000 && addr < 0x10000)
+        gEmu.ram[addr - 0xc000] = value;
     else if (addr >= 0x80000 && addr < 0xa0000)
         gEmu.ebda[addr - 0x80000] = value;
     else if (addr >= 0xa0000)
@@ -529,24 +533,39 @@ void op_out<uint32_t>(uint16_t port, uint32_t value)
 }
 
 template <typename T>
-static int64_t op_imul(T a, T b)
+static uint64_t op_mul_flags(uint64_t res)
 {
-    using stype = std::make_signed_t<T>;
-
     int64_t hi_bits;
-    int64_t res;
 
     gEmu.regs[X86_EMU_EFLAGS].u32 &= ~(X86_FLAG_CF | X86_FLAG_OF);
-
-    res     = ((int64_t)((stype)a)) * ((int64_t)((stype)b));
-    hi_bits = (res >> (sizeof(T) * 8 - 1));
-
+    hi_bits = ((int64_t)res >> (sizeof(T) * 8 - 1));
     if (!(hi_bits == 0 || hi_bits == -1))
     {
         gEmu.regs[X86_EMU_EFLAGS].u32 |= (X86_FLAG_CF | X86_FLAG_OF);
     }
 
     return res;
+}
+
+template <typename T>
+static int64_t op_imul(T a, T b)
+{
+    using stype = std::make_signed_t<T>;
+    uint64_t res;
+
+    res = ((int64_t)((stype)a)) * ((int64_t)((stype)b));
+
+    return op_mul_flags<T>(res);
+}
+
+template <typename T>
+static int64_t op_mul(T a, T b)
+{
+    uint64_t res;
+
+    res = (uint64_t)a * (uint64_t)b;
+
+    return op_mul_flags<T>(res);
 }
 
 template <typename T> static void write_reg_ad(uint64_t value);
@@ -1107,6 +1126,14 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
         read_ip<atype>(&addr);
         write<otype>(seg_addr(addr, gEmu.sregs[seg_override > -1 ? seg_override : X86_EMU_DS]), read_reg<otype>(X86_EMU_EAX));
         break;
+    case 0xa8: /* TEST AL,imm8 */
+        read_ip<uint8_t>(&imm8);
+        op_and((uint8_t)gEmu.regs[X86_EMU_EAX].u32, imm8);
+        break;
+    case 0xa9: /* TEST AX,imm16 */
+        read_ip<otype>(&imm);
+        op_and((otype)gEmu.regs[X86_EMU_EAX].u32, imm);
+        break;
     case 0xb0:
     case 0xb1:
     case 0xb2:
@@ -1135,11 +1162,28 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
         switch (modrm.reg)
         {
         case 4:
-        case 6: /* SHL r/m16 */
+        case 6: /* SHL r/m8,imm8 */
             write_modrm<uint8_t, uint8_t>(&modrm, op_shl(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
             break;
-        case 5: /* SRL r/m16 */
+        case 5: /* SRL r/m8,imm8 */
             write_modrm<uint8_t, uint8_t>(&modrm, op_shr(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            break;
+        default:
+            NOT_IMPLEMENTED(modrm.reg);
+            break;
+        }
+        break;
+    case 0xc1:
+        read_ipmodrm<atype>(&modrm, seg_override);
+        read_ip<uint8_t>(&imm8);
+        switch (modrm.reg)
+        {
+        case 4:
+        case 6: /* SHL r/m16,imm8 */
+            write_modrm<otype, atype>(&modrm, op_shl(read_modrm<otype, atype>(&modrm), (otype)imm8));
+            break;
+        case 5: /* SRL r/m16,imm8 */
+            write_modrm<otype, atype>(&modrm, op_shr(read_modrm<otype, atype>(&modrm), (otype)imm8));
             break;
         default:
             NOT_IMPLEMENTED(modrm.reg);
@@ -1240,10 +1284,37 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
     case 0xef: /* OUT DX,AX */
         op_out<otype>(gEmu.regs[X86_EMU_EDX].u16, read_reg<otype>(X86_EMU_EAX));
         break;
+    case 0xf6:
+        read_ipmodrm<uint8_t>(&modrm, seg_override);
+        switch (modrm.reg)
+        {
+        case 0:
+        case 1: /* TEST r/m8,imm8 */
+            read_ip<uint8_t>(&imm8);
+            op_and(read_modrm<uint8_t, uint8_t>(&modrm), imm8);
+            break;
+        case 4: /* MUL AL,r/m8 */
+            write_reg_ad<uint8_t>(op_mul<uint8_t>(read_reg<uint8_t>(X86_EMU_EAX), read_modrm<uint8_t, uint8_t>(&modrm)));
+            break;
+        case 5: /* IMUL AL,r/m8 */
+            write_reg_ad<uint8_t>(op_imul<uint8_t>(read_reg<uint8_t>(X86_EMU_EAX), read_modrm<uint8_t, uint8_t>(&modrm)));
+            break;
+        default:
+            NOT_IMPLEMENTED(modrm.reg);
+        }
+        break;
     case 0xf7:
         read_ipmodrm<atype>(&modrm, seg_override);
         switch (modrm.reg)
         {
+        case 0:
+        case 1: /* TEST r/m16,imm16 */
+            read_ip<otype>(&imm);
+            op_and(read_modrm<otype, atype>(&modrm), imm);
+            break;
+        case 4: /* MUL AX,r/m16 */
+            write_reg_ad<otype>(op_mul<otype>(read_reg<otype>(X86_EMU_EAX), read_modrm<otype, atype>(&modrm)));
+            break;
         case 5: /* IMUL AX,r/m16 */
             write_reg_ad<otype>(op_imul<otype>(read_reg<otype>(X86_EMU_EAX), read_modrm<otype, atype>(&modrm)));
             break;
@@ -1466,18 +1537,9 @@ void emu8086_init()
     gEmu.bios = (uint8_t*)physical_to_virtual(0xa0000);
 
     puts("Initialized 8086 emulator");
-
-    Emu8086BiosArgs args;
-
-    args.eax = 0x0081;
-    emu8086_bios_int(0x10, &args);
-
-    args.eax = 0x0100;
-    args.ecx = 0x2607;
-    emu8086_bios_int(0x10, &args);
 }
 
-void emu8086_bios_int(int intnum, Emu8086BiosArgs* args)
+int emu8086_bios_int(int intnum, Emu8086BiosArgs* args)
 {
     gEmu.regs[X86_EMU_EAX].u32    = args->eax;
     gEmu.regs[X86_EMU_EBX].u32    = args->ebx;
@@ -1491,10 +1553,10 @@ void emu8086_bios_int(int intnum, Emu8086BiosArgs* args)
     gEmu.regs[X86_EMU_EFLAGS].u32 = 0x00000002;
 
     gEmu.sregs[X86_EMU_CS] = ((uint16_t*)gEmu.ivt)[intnum * 2 + 1];
-    gEmu.sregs[X86_EMU_DS] = 0x0000;
-    gEmu.sregs[X86_EMU_ES] = 0x0000;
-    gEmu.sregs[X86_EMU_FS] = 0x0000;
-    gEmu.sregs[X86_EMU_GS] = 0x0000;
+    gEmu.sregs[X86_EMU_DS] = args->ds;
+    gEmu.sregs[X86_EMU_ES] = args->es;
+    gEmu.sregs[X86_EMU_FS] = args->fs;
+    gEmu.sregs[X86_EMU_GS] = args->gs;
     gEmu.sregs[X86_EMU_SS] = 0x0000;
 
     write<uint16_t>(0x8ffe, 0x0002);
@@ -1502,4 +1564,40 @@ void emu8086_bios_int(int intnum, Emu8086BiosArgs* args)
     write<uint16_t>(0x8ffa, X86_EMU_NULLRET);
 
     emu8086_run();
+
+    args->eax = gEmu.regs[X86_EMU_EAX].u32;
+    args->ebx = gEmu.regs[X86_EMU_EBX].u32;
+    args->ecx = gEmu.regs[X86_EMU_ECX].u32;
+    args->edx = gEmu.regs[X86_EMU_EDX].u32;
+    args->esi = gEmu.regs[X86_EMU_ESI].u32;
+    args->edi = gEmu.regs[X86_EMU_EDI].u32;
+
+    args->ds = gEmu.sregs[X86_EMU_DS];
+    args->es = gEmu.sregs[X86_EMU_ES];
+    args->fs = gEmu.sregs[X86_EMU_FS];
+    args->gs = gEmu.sregs[X86_EMU_GS];
+
+    return !!(gEmu.regs[X86_EMU_EFLAGS].u32 & X86_FLAG_CF);
+}
+
+void emu8086_write(uint16_t seg, uint16_t base, void* addr, size_t size)
+{
+    uint32_t emu_addr;
+
+    emu_addr = seg_addr(base, seg);
+    for (size_t i = 0; i < size; ++i)
+    {
+        write<uint8_t>(emu_addr + i, ((uint8_t*)addr)[i]);
+    }
+}
+
+void emu8086_read(void* addr, uint16_t seg, uint16_t base, size_t size)
+{
+    uint32_t emu_addr;
+
+    emu_addr = seg_addr(base, seg);
+    for (size_t i = 0; i < size; ++i)
+    {
+        ((uint8_t*)addr)[i] = read<uint8_t>(emu_addr + i);
+    }
 }

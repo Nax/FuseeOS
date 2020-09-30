@@ -22,5 +22,5 @@ _start:
 
 .section .bss
 .align 0x1000
-.space 0x2000
+.space 0x10000
 kernel_stack:

@@ -7,4 +7,5 @@ void arch_init(void)
     init_mem();
     init_screen();
     emu8086_init();
+    vbe_init();
 }

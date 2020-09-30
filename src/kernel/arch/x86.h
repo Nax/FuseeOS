@@ -7,6 +7,7 @@
 #include <kernel/arch/x86/interrupts.h>
 #include <kernel/arch/x86/msr.h>
 #include <kernel/arch/x86/traps.h>
+#include <kernel/arch/x86/vbe.h>
 #include <stdint.h>
 
 #endif

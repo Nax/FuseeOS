@@ -1,6 +1,7 @@
 #ifndef ARCH_X86_EMU8086_H
 #define ARCH_X86_EMU8086_H 1
 
+#include <stddef.h>
 #include <stdint.h>
 #include <sys/_cext.h>
 
@@ -42,7 +43,8 @@ struct Emu8086
     volatile uint8_t* bios;
     uint8_t           ivt[0x400];
     uint8_t           bda[0x100];
-    uint8_t           ram[0x1000];
+    uint8_t           stack[0x1000];
+    uint8_t           ram[0x4000];
     uint8_t           ebda[1024 * 128];
 };
 
@@ -54,6 +56,11 @@ struct Emu8086BiosArgs
     uint32_t edx;
     uint32_t esi;
     uint32_t edi;
+
+    uint16_t ds;
+    uint16_t es;
+    uint16_t fs;
+    uint16_t gs;
 };
 
 struct Emu8086ModRM
@@ -72,6 +79,8 @@ struct Emu8086ModRM
 };
 
 void emu8086_init();
-void emu8086_bios_int(int intnum, Emu8086BiosArgs* args);
+int  emu8086_bios_int(int intnum, Emu8086BiosArgs* args);
+void emu8086_write(uint16_t seg, uint16_t base, void* addr, size_t size);
+void emu8086_read(void* addr, uint16_t seg, uint16_t base, size_t size);
 
 #endif
