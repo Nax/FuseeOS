@@ -2,18 +2,20 @@
 
 #include <kernel/kernel.h>
 
-#define NOT_IMPLEMENTED(x) \
-    do                     \
-    {                      \
-        print(__FILE__);   \
-        putchar(':');      \
-        putu(__LINE__);    \
-        print(" (");       \
-        puthex16(x);       \
-        print(")\n");      \
-        for (;;)           \
-        {                  \
-        }                  \
+#define NOT_IMPLEMENTED(x)                                                            \
+    do                                                                                \
+    {                                                                                 \
+        print(__FILE__);                                                              \
+        putchar(':');                                                                 \
+        putu(__LINE__);                                                               \
+        print(" (");                                                                  \
+        puthex16(x);                                                                  \
+        print(")\n");                                                                 \
+        for (;;)                                                                      \
+        {                                                                             \
+            __asm__ __volatile__("mov %%rax, %%rax\r\nxchg %%bx, %%bx\r\n" ::"a"(x)); \
+            __asm__ __volatile__("hlt\r\n");                                          \
+        }                                                                             \
     } while (0)
 
 Emu8086 gEmu;
@@ -469,6 +471,12 @@ static T op_shl(T a, T b)
 }
 
 template <typename T>
+static T op_shr(T a, T b)
+{
+    return op_shift<T>(a, a >> b, 1 << (b - 1), 1 << b);
+}
+
+template <typename T>
 static T op_inc(T a, int incr)
 {
     static constexpr const uint32_t hi_bit = (1 << ((sizeof(T) * 8) - 1));
@@ -598,6 +606,8 @@ static uint32_t string_addr(uint8_t seg, uint8_t reg, atype count, atype offset)
 template <typename otype, typename atype>
 static bool exec_instruction(uint16_t op, int8_t seg_override)
 {
+    uint32_t     addr_src;
+    uint32_t     addr_dst;
     Emu8086ModRM modrm;
     uint8_t      imm8;
     otype        imm;
@@ -1053,6 +1063,10 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
         read_ipmodrm<atype>(&modrm, seg_override);
         write_reg<otype>(modrm.reg, read_modrm<otype, atype>(&modrm));
         break;
+    case 0x8c: /* MOV Sreg,r/m16 */
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<otype, atype>(&modrm, read_sreg(modrm.reg));
+        break;
     case 0x8d: /* LEA r16,m */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_reg<otype>(modrm.reg, modrm_addr<atype>(&modrm));
@@ -1060,6 +1074,19 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
     case 0x8e: /* MOV Sreg, r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_sreg(modrm.reg, read_modrm<otype, atype>(&modrm));
+        break;
+    case 0x90: /* NOP */
+        break;
+    case 0x91:
+    case 0x92:
+    case 0x93:
+    case 0x94:
+    case 0x95:
+    case 0x96:
+    case 0x97: /* XCHG AX,r16 */
+        imm = read_reg<otype>(X86_EMU_EAX);
+        write_reg<otype>(X86_EMU_EAX, read_reg<otype>(op & 7));
+        write_reg<otype>(op & 7, imm);
         break;
     case 0x9c: /* PUSHF */
         push<otype>(gEmu.regs[X86_EMU_EFLAGS].u32 & 0xfcffff);
@@ -1089,23 +1116,52 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
         read_ip<otype>(&imm);
         write_reg<otype>(op & 0x7, imm);
         break;
+    case 0xc0:
+        read_ipmodrm<uint8_t>(&modrm, seg_override);
+        read_ip<uint8_t>(&imm8);
+        switch (modrm.reg)
+        {
+        case 4:
+        case 6: /* SHL r/m16 */
+            write_modrm<uint8_t, uint8_t>(&modrm, op_shl(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            break;
+        case 5:
+            write_modrm<uint8_t, uint8_t>(&modrm, op_shr(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            break;
+        default:
+            NOT_IMPLEMENTED(modrm.reg);
+            break;
+        }
     case 0xc3: /* RET */
         gEmu.regs[X86_EMU_EIP].u32 = pop<otype>();
         break;
+    case 0xcd: /* INT imm8 */
+        read_ip<uint8_t>(&imm8);
+        push<uint16_t>(gEmu.regs[X86_EMU_EFLAGS].u16);
+        push<uint16_t>(gEmu.sregs[X86_EMU_CS]);
+        push<uint16_t>(gEmu.regs[X86_EMU_EIP].u16);
+        gEmu.regs[X86_EMU_EFLAGS].u32 &= ~(X86_FLAG_IF | X86_FLAG_TF | X86_FLAG_AC);
+        gEmu.regs[X86_EMU_EIP].u32 = ((uint16_t*)gEmu.ivt)[imm8 * 2 + 0];
+        gEmu.sregs[X86_EMU_CS]     = ((uint16_t*)gEmu.ivt)[imm8 * 2 + 1];
+        break;
     case 0xcf: /* IRET */
-        gEmu.regs[X86_EMU_EIP].u32 = pop<otype>();
-        gEmu.sregs[X86_EMU_CS]     = pop<otype>();
-        write_reg<otype>(X86_EMU_EFLAGS, pop<otype>());
+        gEmu.regs[X86_EMU_EIP].u16 = pop<uint16_t>();
+        gEmu.sregs[X86_EMU_CS]     = pop<uint16_t>();
+        write_reg<uint16_t>(X86_EMU_EFLAGS, pop<uint16_t>());
 
-        if (seg_addr(gEmu.regs[X86_EMU_EIP].u32, gEmu.sregs[X86_EMU_CS]) == X86_EMU_NULLRET)
+        if (seg_addr(gEmu.regs[X86_EMU_EIP].u16, gEmu.sregs[X86_EMU_CS]) == X86_EMU_NULLRET)
             return true;
         break;
     case 0xd1:
         read_ipmodrm<atype>(&modrm, seg_override);
         switch (modrm.reg)
         {
-        case 4: /* SHL r/m16 */
+        case 4:
+        case 6: /* SHL r/m16 */
             write_modrm<otype, atype>(&modrm, op_shl(read_modrm<otype, atype>(&modrm), (otype)1));
+            break;
+        case 5:
+            write_modrm<otype, atype>(&modrm, op_shr(read_modrm<otype, atype>(&modrm), (otype)1));
             break;
         default:
             NOT_IMPLEMENTED(modrm.reg);
@@ -1116,8 +1172,12 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
         read_ipmodrm<atype>(&modrm, seg_override);
         switch (modrm.reg)
         {
-        case 4: /* SHL r/m16,CL */
+        case 4:
+        case 6: /* SHL r/m16,CL */
             write_modrm<otype, atype>(&modrm, op_shl(read_modrm<otype, atype>(&modrm), (otype)gEmu.regs[X86_EMU_ECX].u8));
+            break;
+        case 5:
+            write_modrm<otype, atype>(&modrm, op_shr(read_modrm<otype, atype>(&modrm), (otype)gEmu.regs[X86_EMU_ECX].u8));
             break;
         default:
             NOT_IMPLEMENTED(modrm.reg);
@@ -1263,7 +1323,35 @@ static bool exec_instruction(uint16_t op, int8_t seg_override)
         push<otype>(gEmu.sregs[X86_EMU_GS]);
         break;
     case 0x2ab:
-    case 0x4ab: /* REP STOS */
+    case 0x4a4: /* REP MOVS m8 */
+        count = read_reg<atype>(X86_EMU_ECX);
+        for (atype i = 0; i < count; ++i)
+        {
+            addr_src = string_addr<uint8_t, atype>(X86_EMU_DS, X86_EMU_ESI, count, i);
+            addr_dst = string_addr<uint8_t, atype>(X86_EMU_ES, X86_EMU_EDI, count, i);
+            write<uint8_t>(addr_dst, read<uint8_t>(addr_src));
+        }
+        write_reg<atype>(X86_EMU_ECX, 0);
+        break;
+    case 0x4a5: /* REP MOVS m16 */
+        count = read_reg<atype>(X86_EMU_ECX);
+        for (atype i = 0; i < count; ++i)
+        {
+            addr_src = string_addr<otype, atype>(X86_EMU_DS, X86_EMU_ESI, count, i);
+            addr_dst = string_addr<otype, atype>(X86_EMU_ES, X86_EMU_EDI, count, i);
+            write<otype>(addr_dst, read<otype>(addr_src));
+        }
+        write_reg<atype>(X86_EMU_ECX, 0);
+        break;
+    case 0x4aa: /* REP STOS m8 */
+        count = read_reg<atype>(X86_EMU_ECX);
+        for (atype i = 0; i < count; ++i)
+        {
+            write<uint8_t>(string_addr<uint8_t, atype>(X86_EMU_ES, X86_EMU_EDI, count, i), read_reg<uint8_t>(X86_EMU_EAX));
+        }
+        write_reg<atype>(X86_EMU_ECX, 0);
+        break;
+    case 0x4ab: /* REP STOS m16 */
         count = read_reg<atype>(X86_EMU_ECX);
         for (atype i = 0; i < count; ++i)
         {
@@ -1365,7 +1453,7 @@ void emu8086_init()
     puts("Initialized 8086 emulator");
 
     Emu8086BiosArgs args;
-    args.eax = 0x0001;
+    args.eax = 0x0081;
     emu8086_bios_int(0x10, &args);
 }
 
