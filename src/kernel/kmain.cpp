@@ -12,24 +12,13 @@ _EXTERNC _NORETURN void kmain(KernelBootParams* params)
     init_physical_mapping();
 
     video_init();
-    puts("FuseeOS Kernel");
-    putchar('\n');
+    kprintf("FuseeOS Kernel\n");
 
     arch_init();
 
-    puts("Memory initialized");
-    print("  Pages: ");
-    puthex64(gKernel.pmem.pages_total);
-    putchar('\n');
+    kprintf("Memory initialized\n");
+    kprintf("  Pages: 0x%lx\n", gKernel.pmem.pages_total);
+    kprintf("  Free:  0x%lx\n", gKernel.pmem.pages_free);
 
-    print("  Free:  ");
-    puthex64(gKernel.pmem.pages_free);
-    putchar('\n');
-    putchar('\n');
-
-    for (;;)
-    {
-        // puthex64(alloc_phys_pages(1));
-        // putchar('\n');
-    }
+    for (;;) {}
 }

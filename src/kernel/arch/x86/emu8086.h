@@ -43,7 +43,7 @@ struct Emu8086
     volatile uint8_t* bios;
     uint8_t           ivt[0x400];
     uint8_t           bda[0x100];
-    uint8_t           stack[0x1000];
+    uint8_t           stack[0x4000];
     uint8_t           ram[0x4000];
     uint8_t           ebda[1024 * 128];
 };

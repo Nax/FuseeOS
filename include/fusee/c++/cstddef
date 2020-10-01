@@ -1,5 +1,5 @@
-#ifndef _CXX_STDDEF
-#define _CXX_STDDEF
+#ifndef _CXX_CSTDDEF
+#define _CXX_CSTDDEF
 
 #include <stddef.h>
 

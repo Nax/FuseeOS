@@ -1,16 +1,10 @@
-#include <type_traits>
-
 #include <kernel/kernel.h>
+#include <type_traits>
 
 #define NOT_IMPLEMENTED(x)                                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
-        print(__FILE__);                                                                                               \
-        putchar(':');                                                                                                  \
-        putu(__LINE__);                                                                                                \
-        print(" (");                                                                                                   \
-        puthex16(x);                                                                                                   \
-        print(")\n");                                                                                                  \
+        kprintf("%s:%u (%hx)\n", __FILE__, __LINE__, (uint16_t)x);                                                     \
         for (;;)                                                                                                       \
         {                                                                                                              \
             __asm__ __volatile__("mov %%rax, %%rax\r\nxchg %%bx, %%bx\r\n" ::"a"(x));                                  \
@@ -20,6 +14,11 @@
 
 Emu8086 gEmu;
 
+/* DEBUG */
+uint16_t gDebugLastOp;
+bool     gDebugLastO32;
+bool     gDebugLastA32;
+
 static uint32_t seg_addr(uint32_t base, uint16_t seg) { return (base + seg * 16) & 0xfffff; }
 
 static uint8_t read_byte(uint32_t addr)
@@ -28,10 +27,14 @@ static uint8_t read_byte(uint32_t addr)
 
     if (addr < 0x400) return gEmu.ivt[addr];
     if (addr >= 0x400 && addr < 0x500) return gEmu.bda[addr - 0x400];
-    if (addr >= 0x8000 && addr < 0x9000) return gEmu.stack[addr - 0x8000];
+    if (addr >= 0x8000 && addr < 0xc000) return gEmu.stack[addr - 0x8000];
     if (addr >= 0xc000 && addr < 0x10000) return gEmu.ram[addr - 0xc000];
     if (addr >= 0x80000 && addr < 0xa0000) return gEmu.ebda[addr - 0x80000];
     if (addr >= 0xa0000) return gEmu.bios[addr - 0xa0000];
+
+    kprintf("%s%sbr! (0x%x)\n", gDebugLastA32 ? "a32 " : "", gDebugLastO32 ? "o32 " : "", addr);
+    for (;;) {}
+
     return 0;
 }
 
@@ -57,7 +60,7 @@ static void write_byte(uint32_t addr, uint8_t value)
         gEmu.ivt[addr] = value;
     else if (addr >= 0x400 && addr < 0x500)
         gEmu.bda[addr - 0x400] = value;
-    else if (addr >= 0x8000 && addr < 0x9000)
+    else if (addr >= 0x8000 && addr < 0xc000)
         gEmu.stack[addr - 0x8000] = value;
     else if (addr >= 0xc000 && addr < 0x10000)
         gEmu.ram[addr - 0xc000] = value;
@@ -65,6 +68,11 @@ static void write_byte(uint32_t addr, uint8_t value)
         gEmu.ebda[addr - 0x80000] = value;
     else if (addr >= 0xa0000)
         gEmu.bios[addr - 0xa0000] = value;
+    else
+    {
+        kprintf("%s%sbw! (0x%x)\n", gDebugLastA32 ? "a32 " : "", gDebugLastO32 ? "o32 " : "", addr);
+        for (;;) {}
+    }
 }
 
 template <typename T> static void write(uint32_t addr, T value)
@@ -76,6 +84,13 @@ template <typename T> static void write(uint32_t addr, T value)
     {
         write_byte(addr + i, tmp[i]);
     }
+}
+
+template <typename T> static T read_reg_raw(uint8_t reg) { return (T)gEmu.regs[reg].u32; }
+
+template <typename T> static void write_reg_raw(uint8_t reg, T value)
+{
+    memcpy(&gEmu.regs[reg].u32, &value, sizeof(T));
 }
 
 template <typename otype> static otype read_reg(uint8_t reg) { return (otype)gEmu.regs[reg & 0x7].u32; }
@@ -120,7 +135,7 @@ static void write_sreg(uint8_t reg, uint16_t value)
 
 template <typename atype> static uint32_t seg_addr_ind(uint16_t reg_seg, uint16_t reg_base)
 {
-    return seg_addr(read_reg<atype>(reg_base), gEmu.sregs[reg_seg]);
+    return seg_addr((atype)(gEmu.regs[reg_base].u32), gEmu.sregs[reg_seg]);
 }
 
 template <typename otype, typename atype> static void push(otype value)
@@ -496,12 +511,12 @@ static int32_t sext32(uint16_t v) { return (int32_t)((int16_t)v); }
 
 static int32_t sext32(uint32_t v) { return v; }
 
-template <typename T> void op_jump(bool cond)
+template <typename otype, typename atype> void op_jump(bool cond)
 {
-    T imm;
+    atype imm;
 
-    read_ip<T>(&imm);
-    if (cond) gEmu.regs[X86_EMU_EIP].i32 += sext32(imm);
+    read_ip<atype>(&imm);
+    if (cond) { gEmu.regs[X86_EMU_EIP].u32 = (otype)(gEmu.regs[X86_EMU_EIP].i32 += sext32(imm)); }
 }
 
 template <typename otype, typename atype> static uint32_t seg_addr_ind_autoinc(uint16_t reg_seg, uint16_t reg_base)
@@ -529,9 +544,9 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
     puthex16(gEmu.sregs[X86_EMU_CS]);
     putchar(':');
     puthex16(gEmu.regs[X86_EMU_EIP].u16);
-    putchar(' ');
+    putchar('_');
     puthex16(op);
-    putchar('\n');*/
+    putchar(' ');*/
 
     switch (op)
     {
@@ -845,52 +860,52 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         op_out<otype>(read_reg<otype>(X86_EMU_EDX), read<otype>(addr_src));
         break;
     case 0x70: /* JO rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_OF));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_OF));
         break;
     case 0x71: /* JNO rel8 */
-        op_jump<uint8_t>(!test_flags(X86_FLAG_OF));
+        op_jump<otype, uint8_t>(!test_flags(X86_FLAG_OF));
         break;
     case 0x72: /* JB rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_CF));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_CF));
         break;
     case 0x73: /* JNB rel8 */
-        op_jump<uint8_t>(!test_flags(X86_FLAG_CF));
+        op_jump<otype, uint8_t>(!test_flags(X86_FLAG_CF));
         break;
     case 0x74: /* JZ rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_ZF));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_ZF));
         break;
     case 0x75: /* JNZ rel8 */
-        op_jump<uint8_t>(!test_flags(X86_FLAG_ZF));
+        op_jump<otype, uint8_t>(!test_flags(X86_FLAG_ZF));
         break;
     case 0x76: /* JNA rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_CF | X86_FLAG_ZF));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_CF | X86_FLAG_ZF));
         break;
     case 0x77: /* JA rel8 */
-        op_jump<uint8_t>(!test_flags(X86_FLAG_CF | X86_FLAG_ZF));
+        op_jump<otype, uint8_t>(!test_flags(X86_FLAG_CF | X86_FLAG_ZF));
         break;
     case 0x78: /* JS rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_SF));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_SF));
         break;
     case 0x79: /* JNS rel8 */
-        op_jump<uint8_t>(!test_flags(X86_FLAG_SF));
+        op_jump<otype, uint8_t>(!test_flags(X86_FLAG_SF));
         break;
     case 0x7a: /* JP rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_PF));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_PF));
         break;
     case 0x7b: /* JNP rel8 */
-        op_jump<uint8_t>(!test_flags(X86_FLAG_PF));
+        op_jump<otype, uint8_t>(!test_flags(X86_FLAG_PF));
         break;
     case 0x7c: /* JL rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF));
         break;
     case 0x7d: /* JNL rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_SF) == test_flags(X86_FLAG_OF));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_SF) == test_flags(X86_FLAG_OF));
         break;
     case 0x7e: /* JLE rel8 */
-        op_jump<uint8_t>(test_flags(X86_FLAG_ZF) || (test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF)));
+        op_jump<otype, uint8_t>(test_flags(X86_FLAG_ZF) || (test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF)));
         break;
     case 0x7f: /* JNLE rel8 */
-        op_jump<uint8_t>(!(test_flags(X86_FLAG_ZF) || (test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF))));
+        op_jump<otype, uint8_t>(!(test_flags(X86_FLAG_ZF) || (test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF))));
         break;
     case 0x80:
     case 0x82:
@@ -1159,7 +1174,7 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
             break;
         }
         break;
-    case 0xc3: /* RET */
+    case 0xc3: /* RET (near) */
         gEmu.regs[X86_EMU_EIP].u32 = pop<otype, atype>();
         break;
     case 0xcd: /* INT imm8 */
@@ -1168,6 +1183,7 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         push<otype, atype>(gEmu.regs[X86_EMU_EFLAGS].u32);
         push<otype, atype>(gEmu.sregs[X86_EMU_CS]);
         push<otype, atype>(gEmu.regs[X86_EMU_EIP].u32);
+
         gEmu.regs[X86_EMU_EFLAGS].u32 &= ~(X86_FLAG_IF | X86_FLAG_TF | X86_FLAG_AC);
         gEmu.regs[X86_EMU_EIP].u32 = ((uint16_t*)gEmu.ivt)[imm8 * 2 + 0];
         gEmu.sregs[X86_EMU_CS]     = ((uint16_t*)gEmu.ivt)[imm8 * 2 + 1];
@@ -1175,7 +1191,7 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
     case 0xcf: /* IRET */
         gEmu.regs[X86_EMU_EIP].u32 = pop<otype, atype>();
         gEmu.sregs[X86_EMU_CS]     = pop<otype, atype>();
-        write_reg<otype>(X86_EMU_EFLAGS, pop<otype, atype>());
+        write_reg_raw<otype>(X86_EMU_EFLAGS, pop<otype, atype>());
 
         if (seg_addr(gEmu.regs[X86_EMU_EIP].u16, gEmu.sregs[X86_EMU_CS]) == X86_EMU_NULLRET) return true;
         break;
@@ -1217,24 +1233,24 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         read_ip<uint8_t>(&imm8);
         write_reg<atype>(X86_EMU_ECX, read_reg<atype>(X86_EMU_ECX) - 1);
         if (read_reg<atype>(X86_EMU_ECX) != 0 && !test_flags(X86_FLAG_ZF))
-            write_reg<otype>(X86_EMU_EIP, read_reg<otype>(X86_EMU_EIP) + (int8_t)imm8);
+            gEmu.regs[X86_EMU_EIP].u32 = (otype)(gEmu.regs[X86_EMU_EIP].i32 + sext32(imm8));
         break;
     case 0xe1: /* LOOPZ */
         read_ip<uint8_t>(&imm8);
         write_reg<atype>(X86_EMU_ECX, read_reg<atype>(X86_EMU_ECX) - 1);
         if (read_reg<atype>(X86_EMU_ECX) != 0 && test_flags(X86_FLAG_ZF))
-            write_reg<otype>(X86_EMU_EIP, read_reg<otype>(X86_EMU_EIP) + (int8_t)imm8);
+            gEmu.regs[X86_EMU_EIP].u32 = (otype)(gEmu.regs[X86_EMU_EIP].i32 + sext32(imm8));
         break;
     case 0xe2: /* LOOP */
         read_ip<uint8_t>(&imm8);
         write_reg<atype>(X86_EMU_ECX, read_reg<atype>(X86_EMU_ECX) - 1);
         if (read_reg<atype>(X86_EMU_ECX) != 0)
-            write_reg<otype>(X86_EMU_EIP, read_reg<otype>(X86_EMU_EIP) + (int8_t)imm8);
+            gEmu.regs[X86_EMU_EIP].u32 = (otype)(gEmu.regs[X86_EMU_EIP].i32 + sext32(imm8));
         break;
     case 0xe3: /* JCXZ */
         read_ip<uint8_t>(&imm8);
         if (read_reg<atype>(X86_EMU_ECX) == 0)
-            write_reg<otype>(X86_EMU_EIP, read_reg<otype>(X86_EMU_EIP) + (int8_t)imm8);
+            gEmu.regs[X86_EMU_EIP].u32 = (otype)(gEmu.regs[X86_EMU_EIP].i32 + sext32(imm8));
         break;
     case 0xe4: /* IN AL,imm8 */
         read_ip<uint8_t>(&imm8);
@@ -1342,13 +1358,13 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         case 0:
         case 2:
         case 4:
-        case 6: /* INC r/m16 */
+        case 6: /* INC r/m8 */
             write_modrm<uint8_t, uint8_t>(&modrm, op_inc(read_modrm<uint8_t, uint8_t>(&modrm), 1));
             break;
         case 1:
         case 3:
         case 5:
-        case 7: /* DEC r/m16 */
+        case 7: /* DEC r/m8 */
             write_modrm<uint8_t, uint8_t>(&modrm, op_inc(read_modrm<uint8_t, uint8_t>(&modrm), -1));
             break;
         }
@@ -1364,7 +1380,7 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
             write_modrm<otype, atype>(&modrm, op_inc(read_modrm<otype, atype>(&modrm), -1));
             break;
         case 4: /* JMP r/m16 */
-            write_reg<otype>(X86_EMU_EIP, read_modrm<otype, atype>(&modrm));
+            write_reg_raw<otype>(X86_EMU_EIP, read_modrm<otype, atype>(&modrm));
             break;
         case 6: /* PUSH r/m16 */
             push<otype, atype>(read_modrm<otype, atype>(&modrm));
@@ -1374,52 +1390,52 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         }
         break;
     case 0x180: /* JO rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_OF));
+        op_jump<otype, atype>(test_flags(X86_FLAG_OF));
         break;
     case 0x181: /* JNO rel8 */
-        op_jump<otype>(!test_flags(X86_FLAG_OF));
+        op_jump<otype, atype>(!test_flags(X86_FLAG_OF));
         break;
     case 0x182: /* JB rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_CF));
+        op_jump<otype, atype>(test_flags(X86_FLAG_CF));
         break;
     case 0x183: /* JNB rel8 */
-        op_jump<otype>(!test_flags(X86_FLAG_CF));
+        op_jump<otype, atype>(!test_flags(X86_FLAG_CF));
         break;
     case 0x184: /* JZ rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_ZF));
+        op_jump<otype, atype>(test_flags(X86_FLAG_ZF));
         break;
     case 0x185: /* JNZ rel8 */
-        op_jump<otype>(!test_flags(X86_FLAG_ZF));
+        op_jump<otype, atype>(!test_flags(X86_FLAG_ZF));
         break;
     case 0x186: /* JNA rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_CF | X86_FLAG_ZF));
+        op_jump<otype, atype>(test_flags(X86_FLAG_CF | X86_FLAG_ZF));
         break;
     case 0x187: /* JA rel8 */
-        op_jump<otype>(!test_flags(X86_FLAG_CF | X86_FLAG_ZF));
+        op_jump<otype, atype>(!test_flags(X86_FLAG_CF | X86_FLAG_ZF));
         break;
     case 0x188: /* JS rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_SF));
+        op_jump<otype, atype>(test_flags(X86_FLAG_SF));
         break;
     case 0x189: /* JNS rel8 */
-        op_jump<otype>(!test_flags(X86_FLAG_SF));
+        op_jump<otype, atype>(!test_flags(X86_FLAG_SF));
         break;
     case 0x18a: /* JP rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_PF));
+        op_jump<otype, atype>(test_flags(X86_FLAG_PF));
         break;
     case 0x18b: /* JNP rel8 */
-        op_jump<otype>(!test_flags(X86_FLAG_PF));
+        op_jump<otype, atype>(!test_flags(X86_FLAG_PF));
         break;
     case 0x18c: /* JL rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF));
+        op_jump<otype, atype>(test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF));
         break;
     case 0x18d: /* JNL rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_SF) == test_flags(X86_FLAG_OF));
+        op_jump<otype, atype>(test_flags(X86_FLAG_SF) == test_flags(X86_FLAG_OF));
         break;
     case 0x18e: /* JLE rel8 */
-        op_jump<otype>(test_flags(X86_FLAG_ZF) || (test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF)));
+        op_jump<otype, atype>(test_flags(X86_FLAG_ZF) || (test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF)));
         break;
     case 0x18f: /* JNLE rel8 */
-        op_jump<otype>(!(test_flags(X86_FLAG_ZF) || (test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF))));
+        op_jump<otype, atype>(!(test_flags(X86_FLAG_ZF) || (test_flags(X86_FLAG_SF) != test_flags(X86_FLAG_OF))));
         break;
     case 0x1a0: /* PUSH FS */
         push<otype, atype>(gEmu.sregs[X86_EMU_FS]);
@@ -1589,7 +1605,10 @@ static void emu8086_run()
             prefix_rep = 0x400;
             break;
         default:
-            op = ((uint16_t)tmp | prefix_0f | prefix_rep);
+            op            = ((uint16_t)tmp | prefix_0f | prefix_rep);
+            gDebugLastOp  = op;
+            gDebugLastO32 = o32;
+            gDebugLastA32 = a32;
             switch (((uint8_t)a32 << 1) | (uint8_t)o32)
             {
             case 0b00:
@@ -1622,7 +1641,7 @@ void emu8086_init()
     memcpy(gEmu.ebda, physical_to_virtual(0x00080000), 128 * 1024);
     gEmu.bios = (uint8_t*)physical_to_virtual(0xa0000);
 
-    puts("Initialized 8086 emulator");
+    kprintf("Initialized 8086 emulator\n");
 }
 
 int emu8086_bios_int(int intnum, Emu8086BiosArgs* args)
@@ -1633,8 +1652,8 @@ int emu8086_bios_int(int intnum, Emu8086BiosArgs* args)
     gEmu.regs[X86_EMU_EDX].u32    = args->edx;
     gEmu.regs[X86_EMU_ESI].u32    = args->esi;
     gEmu.regs[X86_EMU_EDI].u32    = args->edi;
-    gEmu.regs[X86_EMU_EBP].u32    = 0x9000;
-    gEmu.regs[X86_EMU_ESP].u32    = 0x9000 - 3 * 2;
+    gEmu.regs[X86_EMU_EBP].u32    = 0xc000;
+    gEmu.regs[X86_EMU_ESP].u32    = 0xc000 - 3 * 2;
     gEmu.regs[X86_EMU_EIP].u32    = ((uint16_t*)gEmu.ivt)[intnum * 2 + 0];
     gEmu.regs[X86_EMU_EFLAGS].u32 = 0x00000002;
 

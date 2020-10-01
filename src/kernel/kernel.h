@@ -27,14 +27,7 @@ typedef struct
 extern Kernel gKernel;
 
 /* print */
-void putchar(int c);
-void print(const char* str);
-void puts(const char* str);
-void puthex8(uint8_t v);
-void puthex16(uint16_t v);
-void puthex32(uint32_t v);
-void puthex64(uint64_t v);
-void putu(int64_t v);
+void kprintf(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /* gdt */
 void init_gdt(void);

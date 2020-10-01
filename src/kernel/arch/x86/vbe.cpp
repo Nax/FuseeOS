@@ -15,11 +15,11 @@ static uint16_t vbe_pick_mode(uint16_t modes_seg, uint16_t modes_base)
 
         args.eax = 0x4f01;
         args.ecx = modes[i];
-        args.es  = 0x0c;
+        args.es  = 0x0c00;
         args.edi = 0x0000;
 
         emu8086_bios_int(0x10, &args);
-        emu8086_read(&mode_info, 0x0c, 0x0000, sizeof(mode_info));
+        emu8086_read(&mode_info, 0x0c00, 0x0000, sizeof(mode_info));
 
         if (!(mode_info.attr & 0x90)) continue;
 
@@ -49,16 +49,12 @@ void vbe_init(void)
     char            oem[256];
 
     args.eax = 0x4f00;
-    args.es  = 0x0c;
+    args.es  = 0x0c00;
     args.edi = 0x0000;
     emu8086_bios_int(0x10, &args);
-    emu8086_read(&info, 0x0c, 0x0000, sizeof(info));
+    emu8086_read(&info, 0x0c00, 0x0000, sizeof(info));
     emu8086_read(oem, info.oem_ptr[1], info.oem_ptr[0], sizeof(oem));
     oem[255] = 0;
-
-    print("VBE: ");
-    print(oem);
-    putchar('\n');
-
+    kprintf("VBE: %s\n", oem);
     vbe_pick_mode(info.video_modes_ptr[1], info.video_modes_ptr[0]);
 }

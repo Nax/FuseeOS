@@ -1,0 +1,13 @@
+#ifndef _CXX_CSTDARG
+#define _CXX_CSTDARG
+
+#include <sys/_variadic.h>
+
+namespace std
+{
+
+typedef __va_list va_list;
+
+};
+
+#endif
