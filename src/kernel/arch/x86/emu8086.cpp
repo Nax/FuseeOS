@@ -160,7 +160,12 @@ template <typename T> static void read_ip(T* ptr)
     gEmu.regs[X86_EMU_EIP].u16 += sizeof(T);
 }
 
-static void read_ipmodrm16(Emu8086ModRM* ptr)
+template <typename T> static void read_ipmodrm(Emu8086ModRM* ptr, int8_t seg_override)
+{
+    static_assert(sizeof(T) >= 2, "ModR/M must be 16 or 32 bit");
+}
+
+template <> void read_ipmodrm<uint16_t>(Emu8086ModRM* ptr, int8_t seg_override)
 {
     read_ip<uint8_t>((uint8_t*)ptr);
     switch (ptr->mod)
@@ -178,9 +183,10 @@ static void read_ipmodrm16(Emu8086ModRM* ptr)
     case 3:
         break;
     }
+    ptr->seg_override = seg_override;
 }
 
-static void read_ipmodrm32(Emu8086ModRM* ptr)
+template <> void read_ipmodrm<uint32_t>(Emu8086ModRM* ptr, int8_t seg_override)
 {
     read_ip<uint8_t>((uint8_t*)ptr);
     switch (ptr->mod)
@@ -196,21 +202,16 @@ static void read_ipmodrm32(Emu8086ModRM* ptr)
     case 3:
         break;
     }
-}
-
-template <typename atype> static void read_ipmodrm(Emu8086ModRM* ptr, int8_t seg_override)
-{
-    read_ipmodrm16(ptr);
     ptr->seg_override = seg_override;
 }
 
-template <> void read_ipmodrm<uint32_t>(Emu8086ModRM* ptr, int8_t seg_override)
+template <typename T> static uint32_t modrm_addr(const Emu8086ModRM* modrm)
 {
-    read_ipmodrm32(ptr);
-    ptr->seg_override = seg_override;
+    static_assert(sizeof(T) >= 2, "ModR/M must be 16 or 32 bit");
+    return 0;
 }
 
-static uint32_t modrm_addr8(const Emu8086ModRM* modrm)
+template <> uint32_t modrm_addr<uint16_t>(const Emu8086ModRM* modrm)
 {
     uint16_t base;
     uint16_t seg;
@@ -276,9 +277,7 @@ static uint32_t modrm_addr8(const Emu8086ModRM* modrm)
     return seg_addr(base, seg);
 }
 
-static uint32_t modrm_addr16(const Emu8086ModRM* modrm) { return modrm_addr8(modrm); }
-
-static uint32_t modrm_addr32(const Emu8086ModRM* modrm)
+template <> uint32_t modrm_addr<uint32_t>(const Emu8086ModRM* modrm)
 {
     uint32_t base;
     uint16_t seg;
@@ -292,10 +291,6 @@ static uint32_t modrm_addr32(const Emu8086ModRM* modrm)
 
     return seg_addr(base, seg);
 }
-
-template <typename atype> static uint32_t modrm_addr(const Emu8086ModRM* modrm) { return modrm_addr16(modrm); }
-
-template <> uint32_t modrm_addr<uint32_t>(const Emu8086ModRM* modrm) { return modrm_addr32(modrm); }
 
 template <typename otype, typename atype> static otype read_modrm(const Emu8086ModRM* modrm)
 {
@@ -540,28 +535,19 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
     atype        count;
     atype        addr;
 
-    /*
-    puthex16(gEmu.sregs[X86_EMU_CS]);
-    putchar(':');
-    puthex16(gEmu.regs[X86_EMU_EIP].u16);
-    putchar('_');
-    puthex16(op);
-    putchar(' ');*/
-
     switch (op)
     {
     case 0x00: /* ADD r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_modrm<uint8_t, uint8_t>(&modrm,
-                                      op_add(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<uint8_t, atype>(&modrm, op_add(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg)));
         break;
     case 0x01: /* ADD r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_modrm<otype, atype>(&modrm, op_add(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg)));
         break;
     case 0x02: /* ADD r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_reg<uint8_t>(modrm.reg, op_add(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, uint8_t>(&modrm)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_reg<uint8_t>(modrm.reg, op_add(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, atype>(&modrm)));
         break;
     case 0x03: /* ADD r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -582,17 +568,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         gEmu.sregs[X86_EMU_ES] = pop<otype, atype>();
         break;
     case 0x08: /* OR r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_modrm<uint8_t, uint8_t>(&modrm,
-                                      op_or(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<uint8_t, atype>(&modrm, op_or(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg)));
         break;
     case 0x09: /* OR r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_modrm<otype, atype>(&modrm, op_or(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg)));
         break;
     case 0x0a: /* OR r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_reg<uint8_t>(modrm.reg, op_or(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, uint8_t>(&modrm)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_reg<uint8_t>(modrm.reg, op_or(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, atype>(&modrm)));
         break;
     case 0x0b: /* OR r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -613,17 +598,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         gEmu.sregs[X86_EMU_CS] = pop<otype, atype>();
         break;
     case 0x10: /* ADC r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_modrm<uint8_t, uint8_t>(&modrm,
-                                      op_adc(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<uint8_t, atype>(&modrm, op_adc(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg)));
         break;
     case 0x11: /* ADC r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_modrm<otype, atype>(&modrm, op_adc(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg)));
         break;
     case 0x12: /* ADC r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_reg<uint8_t>(modrm.reg, op_adc(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, uint8_t>(&modrm)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_reg<uint8_t>(modrm.reg, op_adc(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, atype>(&modrm)));
         break;
     case 0x13: /* ADC r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -644,17 +628,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         gEmu.sregs[X86_EMU_SS] = pop<otype, atype>();
         break;
     case 0x18: /* SBB r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_modrm<uint8_t, uint8_t>(&modrm,
-                                      op_add(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<uint8_t, atype>(&modrm, op_add(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg)));
         break;
     case 0x19: /* SBB r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_modrm<otype, atype>(&modrm, op_add(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg)));
         break;
     case 0x1a: /* SBB r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_reg<uint8_t>(modrm.reg, op_add(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, uint8_t>(&modrm)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_reg<uint8_t>(modrm.reg, op_add(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, atype>(&modrm)));
         break;
     case 0x1b: /* SBB r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -675,17 +658,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         gEmu.sregs[X86_EMU_DS] = pop<otype, atype>();
         break;
     case 0x20: /* AND r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_modrm<uint8_t, uint8_t>(&modrm,
-                                      op_and(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<uint8_t, atype>(&modrm, op_and(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg)));
         break;
     case 0x21: /* AND r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_modrm<otype, atype>(&modrm, op_and(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg)));
         break;
     case 0x22: /* AND r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_reg<uint8_t>(modrm.reg, op_and(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, uint8_t>(&modrm)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_reg<uint8_t>(modrm.reg, op_and(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, atype>(&modrm)));
         break;
     case 0x23: /* AND r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -700,17 +682,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         write_reg<otype>(X86_EMU_EAX, op_and(read_reg<otype>(X86_EMU_EAX), imm));
         break;
     case 0x28: /* SUB r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_modrm<uint8_t, uint8_t>(&modrm,
-                                      op_sub(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<uint8_t, atype>(&modrm, op_sub(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg)));
         break;
     case 0x29: /* SUB r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_modrm<otype, atype>(&modrm, op_sub(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg)));
         break;
     case 0x2a: /* SUB r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_reg<uint8_t>(modrm.reg, op_sub(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, uint8_t>(&modrm)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_reg<uint8_t>(modrm.reg, op_sub(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, atype>(&modrm)));
         break;
     case 0x2b: /* SUB r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -725,17 +706,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         write_reg<otype>(X86_EMU_EAX, op_sub(read_reg<otype>(X86_EMU_EAX), imm));
         break;
     case 0x30: /* XOR r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_modrm<uint8_t, uint8_t>(&modrm,
-                                      op_xor(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<uint8_t, atype>(&modrm, op_xor(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg)));
         break;
     case 0x31: /* XOR r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_modrm<otype, atype>(&modrm, op_xor(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg)));
         break;
     case 0x32: /* XOR r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_reg<uint8_t>(modrm.reg, op_xor(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, uint8_t>(&modrm)));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_reg<uint8_t>(modrm.reg, op_xor(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, atype>(&modrm)));
         break;
     case 0x33: /* XOR r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -750,16 +730,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         write_reg<otype>(X86_EMU_EAX, op_xor(read_reg<otype>(X86_EMU_EAX), imm));
         break;
     case 0x38: /* CMP r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        op_sub(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        op_sub(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg));
         break;
     case 0x39: /* CMP r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         op_sub(read_modrm<otype, atype>(&modrm), read_reg<otype>(modrm.reg));
         break;
     case 0x3a: /* CMP r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        op_sub(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, uint8_t>(&modrm));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        op_sub(read_reg<uint8_t>(modrm.reg), read_modrm<uint8_t, atype>(&modrm));
         break;
     case 0x3b: /* CMP r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -909,34 +889,34 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         break;
     case 0x80:
     case 0x82:
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
+        read_ipmodrm<atype>(&modrm, seg_override);
         read_ip<uint8_t>(&imm8);
 
         switch (modrm.reg)
         {
         case 0x0: /* ADD r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_add(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_add(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         case 0x1: /* OR r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_or(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_or(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         case 0x2: /* ADC r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_adc(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_adc(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         case 0x3: /* SBB r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_sbb(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_sbb(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         case 0x4: /* AND r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_and(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_and(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         case 0x5: /* SUB r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_sub(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_sub(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         case 0x6: /* XOR r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_xor(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_xor(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         case 0x7: /* CMP r/m8,imm8 */
-            op_sub(read_modrm<uint8_t, uint8_t>(&modrm), imm8);
+            op_sub(read_modrm<uint8_t, atype>(&modrm), imm8);
             break;
         }
         break;
@@ -1006,8 +986,8 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         }
         break;
     case 0x84: /* TEST r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        op_and(read_modrm<uint8_t, uint8_t>(&modrm), read_reg<uint8_t>(modrm.reg));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        op_and(read_modrm<uint8_t, atype>(&modrm), read_reg<uint8_t>(modrm.reg));
         break;
     case 0x85: /* TEST r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -1016,8 +996,8 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
     case 0x86: /* XCHG r8,r/m8 */
         read_ipmodrm<atype>(&modrm, seg_override);
         imm8 = read_reg<uint8_t>(modrm.reg);
-        write_reg<uint8_t>(modrm.reg, read_modrm<uint8_t, uint8_t>(&modrm));
-        write_modrm<uint8_t, uint8_t>(&modrm, imm8);
+        write_reg<uint8_t>(modrm.reg, read_modrm<uint8_t, atype>(&modrm));
+        write_modrm<uint8_t, atype>(&modrm, imm8);
         break;
     case 0x87: /* XCHG r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -1026,16 +1006,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         write_modrm<otype, atype>(&modrm, imm);
         break;
     case 0x88: /* MOV r/m8,r8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_modrm<uint8_t, uint8_t>(&modrm, read_reg<uint8_t>(modrm.reg));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<uint8_t, atype>(&modrm, read_reg<uint8_t>(modrm.reg));
         break;
     case 0x89: /* MOV r/m16,r16 */
         read_ipmodrm<atype>(&modrm, seg_override);
         write_modrm<otype, atype>(&modrm, read_reg<otype>(modrm.reg));
         break;
     case 0x8a: /* MOV r8,r/m8 */
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
-        write_reg<uint8_t>(modrm.reg, read_modrm<uint8_t, uint8_t>(&modrm));
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_reg<uint8_t>(modrm.reg, read_modrm<uint8_t, atype>(&modrm));
         break;
     case 0x8b: /* MOV r16,r/m16 */
         read_ipmodrm<atype>(&modrm, seg_override);
@@ -1141,16 +1121,16 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         write_reg<otype>(op & 0x7, imm);
         break;
     case 0xc0:
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
+        read_ipmodrm<atype>(&modrm, seg_override);
         read_ip<uint8_t>(&imm8);
         switch (modrm.reg)
         {
         case 4:
         case 6: /* SHL r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_shl(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_shl(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         case 5: /* SRL r/m8,imm8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_shr(read_modrm<uint8_t, uint8_t>(&modrm), imm8));
+            write_modrm<uint8_t, atype>(&modrm, op_shr(read_modrm<uint8_t, atype>(&modrm), imm8));
             break;
         default:
             NOT_IMPLEMENTED(modrm.reg);
@@ -1294,21 +1274,19 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         op_out<otype>(gEmu.regs[X86_EMU_EDX].u16, read_reg<otype>(X86_EMU_EAX));
         break;
     case 0xf6:
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
+        read_ipmodrm<atype>(&modrm, seg_override);
         switch (modrm.reg)
         {
         case 0:
         case 1: /* TEST r/m8,imm8 */
             read_ip<uint8_t>(&imm8);
-            op_and(read_modrm<uint8_t, uint8_t>(&modrm), imm8);
+            op_and(read_modrm<uint8_t, atype>(&modrm), imm8);
             break;
         case 4: /* MUL AL,r/m8 */
-            write_reg_ad<uint8_t>(
-                op_mul<uint8_t>(read_reg<uint8_t>(X86_EMU_EAX), read_modrm<uint8_t, uint8_t>(&modrm)));
+            write_reg_ad<uint8_t>(op_mul<uint8_t>(read_reg<uint8_t>(X86_EMU_EAX), read_modrm<uint8_t, atype>(&modrm)));
             break;
         case 5: /* IMUL AL,r/m8 */
-            write_reg_ad<uint8_t>(
-                op_imul<uint8_t>(read_reg<uint8_t>(X86_EMU_EAX), read_modrm<uint8_t, uint8_t>(&modrm)));
+            write_reg_ad<uint8_t>(op_imul<uint8_t>(read_reg<uint8_t>(X86_EMU_EAX), read_modrm<uint8_t, atype>(&modrm)));
             break;
         default:
             NOT_IMPLEMENTED(modrm.reg);
@@ -1352,20 +1330,20 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         gEmu.regs[X86_EMU_EFLAGS].u32 |= X86_FLAG_DF;
         break;
     case 0xfe:
-        read_ipmodrm<uint8_t>(&modrm, seg_override);
+        read_ipmodrm<atype>(&modrm, seg_override);
         switch (modrm.reg)
         {
         case 0:
         case 2:
         case 4:
         case 6: /* INC r/m8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_inc(read_modrm<uint8_t, uint8_t>(&modrm), 1));
+            write_modrm<uint8_t, atype>(&modrm, op_inc(read_modrm<uint8_t, atype>(&modrm), 1));
             break;
         case 1:
         case 3:
         case 5:
         case 7: /* DEC r/m8 */
-            write_modrm<uint8_t, uint8_t>(&modrm, op_inc(read_modrm<uint8_t, uint8_t>(&modrm), -1));
+            write_modrm<uint8_t, atype>(&modrm, op_inc(read_modrm<uint8_t, atype>(&modrm), -1));
             break;
         }
         break;
