@@ -45,5 +45,5 @@ void init_mem(void)
     gBootParams.video.framebuffer = physical_to_virtual((uint64_t)gBootParams.video.framebuffer);
 
     /* Free all lomem paging info */
-    kmunmap_tree(nullptr, 0x100000000);
+    // kmunmap_tree(nullptr, 0x100000000);
 }

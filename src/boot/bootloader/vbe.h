@@ -1,10 +1,10 @@
-#ifndef ARCH_X86_VBE_H
-#define ARCH_X86_VBE_H
+#ifndef LIBBOOT_VBE_H
+#define LIBBOOT_VBE_H
 
 #include <stdint.h>
 #include <sys/_cext.h>
 
-struct VbeInfoBlock
+typedef struct
 {
     char     magic[4];
     uint16_t version;
@@ -12,9 +12,10 @@ struct VbeInfoBlock
     uint8_t  caps[4];
     uint16_t video_modes_ptr[2];
     uint16_t total_memory;
-} _PACKED;
+    uint8_t  reserved[236];
+} _PACKED VbeInfoBlock;
 
-struct VbeVideoMode
+typedef struct
 {
     uint16_t attr;
     uint8_t  win_a;
@@ -41,7 +42,8 @@ struct VbeVideoMode
     uint32_t physbase;
     uint32_t reserved1;
     uint16_t reserved2;
-} _PACKED;
+    uint8_t  reserved3[206];
+} _PACKED VbeVideoMode;
 
 void vbe_init(void);
 

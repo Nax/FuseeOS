@@ -14,10 +14,18 @@ _NORETURN void bmain(int drive, const BootPartitionRecord* mbr)
 
     kernel_params_init(drive, mbr);
     screen_init();
-    boot_printf("FuseeOS Bootloader\n");
+    vbe_init();
     memory_detect();
-    /* Identity map the first 1GiB */
-    mmap64((void*)0, 0, 0x40000000);
+    mmap64_4GiB();
+    boot_printf("FuseeOS Bootloader\n");
+    boot_printf("Detected memory:\n");
+    for (int i = 0; gBootParams.mem_map[i].size; ++i)
+    {
+        boot_printf("  0x%lx - 0x%lx\n",
+                    gBootParams.mem_map[i].base,
+                    gBootParams.mem_map[i].base + gBootParams.mem_map[i].size - 1);
+    }
+    boot_printf("\n");
     mfs_init();
     initram_init();
 

@@ -17,6 +17,7 @@ void memory_detect(void)
         args.ecx = 24;
         args.edx = 0x534d4150;
         args.edi = (uintptr_t)&mem;
+        args.es  = 0;
 
         if (bios_call(0x15, &args)) break;
 
@@ -38,15 +39,6 @@ void memory_detect(void)
 
         if (args.ebx == 0) break;
     }
-
-    boot_printf("Detected memory:\n");
-    for (int i = 0; i < map_curs; ++i)
-    {
-        boot_printf("  0x%lx - 0x%lx\n",
-                    gBootParams.mem_map[i].base,
-                    gBootParams.mem_map[i].base + gBootParams.mem_map[i].size - 1);
-    }
-    boot_printf("\n");
 }
 
 void* memory_alloc(uint32_t size)

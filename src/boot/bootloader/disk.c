@@ -24,6 +24,7 @@ void disk_read_raw(char* dst, uint64_t lba, uint32_t sectors)
         args.eax = 0x4200;
         args.edx = gBootParams.boot_drive;
         args.esi = (uintptr_t)&dap;
+        args.es  = 0;
         bios_call(0x13, &args);
 
         memcpy(dst, buffer, nsectors * 512);

@@ -1,6 +1,7 @@
 #ifndef BOOT_H
 #define BOOT_H 1
 
+#include <boot/bootloader/vbe.h>
 #include <libboot/libboot.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -74,6 +75,7 @@ char* initram_lookup(const char* name);
 
 /* mmap */
 void mmap64(void* src, uint64_t dst, uint64_t size);
+void mmap64_4GiB(void);
 
 /* elf */
 uint64_t elf_load(const char* name);

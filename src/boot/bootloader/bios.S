@@ -37,6 +37,9 @@ bios_call:
     mov 16(%ebp), %esi
     mov 20(%ebp), %edi
 
+    movw 24(%ebp), %es
+    movw 26(%ebp), %fs
+
 int_call:
     /* Perform the BIOS call */
     int $0x00
@@ -49,6 +52,9 @@ int_call:
     mov %edx, 12(%ebp)
     mov %esi, 16(%ebp)
     mov %edi, 20(%ebp)
+
+    movw %es, 24(%ebp)
+    movw %fs, 26(%ebp)
 
     /* Save the carry status */
     setc (saved_bios_cf)
