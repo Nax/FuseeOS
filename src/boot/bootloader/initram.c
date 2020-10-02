@@ -6,15 +6,15 @@ void initram_init(void)
     uint64_t inode;
 
     inode = mfs_lookup_root("boot");
-    boot_printf("Found boot inode: 0x%llx\n", inode);
+    boot_printf("Found boot inode: 0x%lx\n", inode);
     inode = mfs_lookup_at(inode, "initram");
-    boot_printf("Found initram inode: 0x%llx\n\n", inode);
+    boot_printf("Found initram inode: 0x%lx\n\n", inode);
 
     gBootParams.initram_size = mfs_file_size(inode);
     gBootParams.initram      = memory_alloc(gBootParams.initram_size);
     mfs_read(gBootParams.initram, inode);
     boot_printf(
-        "Initram loaded at 0x%lx, size: 0x%lx\n", (uint32_t)gBootParams.initram, (uint32_t)gBootParams.initram_size);
+        "Initram loaded at 0x%lx, size: 0x%lx\n", (uint64_t)gBootParams.initram, (uint64_t)gBootParams.initram_size);
 }
 
 char* initram_lookup(const char* name)

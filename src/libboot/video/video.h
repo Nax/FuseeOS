@@ -1,7 +1,6 @@
 #ifndef LIBBOOT_VIDEO_H
 #define LIBBOOT_VIDEO_H
 
-#include <libboot/common.h>
 #include <stdint.h>
 #include <sys/_cext.h>
 
@@ -19,16 +18,16 @@ typedef struct
 
 typedef struct
 {
-    BOOT_ALIGNED(uint32_t mode);
-    BOOT_ALIGNED(uint16_t width);
-    BOOT_ALIGNED(uint16_t height);
-    BOOT_ALIGNED(uint8_t bpp);
-    BOOT_ALIGNED(uint32_t pitch);
-    BOOT_ALIGNED(uint16_t text_cursor_x);
-    BOOT_ALIGNED(uint16_t text_cursor_y);
-    BOOT_ALIGNED(uint16_t text_max_x);
-    BOOT_ALIGNED(uint16_t text_max_y);
-    BOOT_ALIGNED(volatile void* framebuffer);
+    uint32_t       mode;
+    uint16_t       width;
+    uint16_t       height;
+    uint8_t        bpp;
+    uint32_t       pitch;
+    uint16_t       text_cursor_x;
+    uint16_t       text_cursor_y;
+    uint16_t       text_max_x;
+    uint16_t       text_max_y;
+    volatile void* framebuffer;
 } BootVideo;
 
 _EXTERNC void video_init(void);

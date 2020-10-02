@@ -42,7 +42,7 @@ void memory_detect(void)
     boot_printf("Detected memory:\n");
     for (int i = 0; i < map_curs; ++i)
     {
-        boot_printf("  0x%llx - 0x%llx\n",
+        boot_printf("  0x%lx - 0x%lx\n",
                     gBootParams.mem_map[i].base,
                     gBootParams.mem_map[i].base + gBootParams.mem_map[i].size - 1);
     }

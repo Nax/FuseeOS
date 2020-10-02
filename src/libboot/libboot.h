@@ -1,7 +1,6 @@
 #ifndef LIBBOOT_H
 #define LIBBOOT_H 1
 
-#include <libboot/common.h>
 #include <libboot/video/video.h>
 #include <stdint.h>
 #include <sys/_cext.h>
@@ -22,14 +21,14 @@ typedef struct
 
 typedef struct
 {
-    BOOT_ALIGNED(uint32_t boot_drive);
-    BOOT_ALIGNED(BootPartitionRecord mbr_partition);
-    BOOT_ALIGNED(BootVideo video);
-    BOOT_ALIGNED(BootMemRegion mem_map[MAX_MEM_REGIONS]);
-    BOOT_ALIGNED(BootMemRegion mem_free[MAX_MEM_REGIONS]);
-    BOOT_ALIGNED(char* initram);
-    BOOT_ALIGNED(uint64_t initram_size);
-    BOOT_ALIGNED(char* cr3);
+    uint32_t            boot_drive;
+    BootPartitionRecord mbr_partition;
+    BootVideo           video;
+    BootMemRegion       mem_map[MAX_MEM_REGIONS];
+    BootMemRegion       mem_free[MAX_MEM_REGIONS];
+    char*               initram;
+    uint64_t            initram_size;
+    char*               cr3;
 } BootParams;
 
 extern BootParams gBootParams;

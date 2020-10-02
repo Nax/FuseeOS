@@ -12,7 +12,7 @@ static void mfs_read_page(MfsPage* page, uint64_t inode)
 void mfs_init(void)
 {
     disk_read_raw((char*)&gMetadata, MFS_METADATA_PAGE * 8, MFS_PAGE_SIZE / 512);
-    boot_printf("Found root inode: 0x%llx\n", gMetadata.meta.root);
+    boot_printf("Found root inode: 0x%lx\n", gMetadata.meta.root);
 }
 
 uint64_t mfs_lookup_at(uint64_t inode, const char* name)
