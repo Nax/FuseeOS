@@ -1,3 +1,5 @@
+#if 0
+
 #include <kernel/arch/x86/emu8086.h>
 #include <kernel/arch/x86/vbe.h>
 #include <kernel/kernel.h>
@@ -58,3 +60,5 @@ void vbe_init(void)
     kprintf("VBE: %s\n", oem);
     vbe_pick_mode(info.video_modes_ptr[1], info.video_modes_ptr[0]);
 }
+
+#endif

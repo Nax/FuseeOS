@@ -2,12 +2,12 @@
 
 Kernel gKernel;
 
-_EXTERNC _NORETURN void kmain(KernelBootParams* params)
+_EXTERNC _NORETURN void kmain(BootParams* params)
 {
     bzero(&gKernel, sizeof(gKernel));
 
     /* Copy the boot parameters */
-    memcpy(&gKernel.boot_params, params, sizeof(KernelBootParams));
+    memcpy(&gKernel.boot_params, params, sizeof(*params));
 
     init_physical_mapping();
 

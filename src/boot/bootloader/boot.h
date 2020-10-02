@@ -1,7 +1,7 @@
 #ifndef BOOT_H
 #define BOOT_H 1
 
-#include <kernel/params.h>
+#include <libboot/libboot.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -9,7 +9,7 @@
 
 #define PAGESIZE 4096
 
-extern KernelBootParams g_kernel_params;
+extern BootParams g_kernel_params;
 
 typedef struct
 {
@@ -77,6 +77,6 @@ void mmap64(void* src, uint64_t dst, uint64_t size);
 /* elf */
 uint64_t elf_load(const char* name);
 
-void jump_mode_long(uint64_t entry, uint32_t cr3, KernelBootParams* params);
+void jump_mode_long(uint64_t entry, uint32_t cr3, BootParams* params);
 
 #endif

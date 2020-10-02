@@ -1,9 +1,10 @@
 #ifndef KERNEL_H
 #define NERNEL_H 1
 
+#include <libboot/libboot.h>
+
 #include <kernel/arch.h>
 #include <kernel/mem.h>
-#include <kernel/params.h>
 #include <kernel/sections.h>
 #include <kernel/video/video.h>
 #include <string.h>
@@ -14,7 +15,7 @@
 /* The main kernel structure */
 typedef struct
 {
-    KernelBootParams        boot_params;
+    BootParams              boot_params;
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
     Video                   video;

@@ -1,17 +1,17 @@
 #include <boot/bootloader/boot.h>
 
-KernelBootParams g_kernel_params;
+BootParams g_kernel_params;
 
 typedef void (*KernelEntry)(KernelBootParams*);
 
-static void kernel_params_init(int drive, const PartitionRecord* mbr)
+static void kernel_params_init(int drive, const BootPartitionRecord* mbr)
 {
     bzero(&g_kernel_params, sizeof(g_kernel_params));
     g_kernel_params.boot_drive = (uint32_t)drive;
     memcpy(&g_kernel_params.mbr_partition, mbr, sizeof(g_kernel_params.mbr_partition));
 }
 
-_NORETURN void bmain(int drive, const PartitionRecord* mbr)
+_NORETURN void bmain(int drive, const BootPartitionRecord* mbr)
 {
     KernelEntry entry;
 

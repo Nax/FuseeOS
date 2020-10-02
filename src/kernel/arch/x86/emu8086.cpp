@@ -1,6 +1,8 @@
 #include <kernel/kernel.h>
 #include <type_traits>
 
+#if 0
+
 #define NOT_IMPLEMENTED(x)                                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -1033,6 +1035,10 @@ template <typename otype, typename atype> static bool exec_instruction(uint16_t 
         read_ipmodrm<atype>(&modrm, seg_override);
         write_sreg(modrm.reg, read_modrm<otype, atype>(&modrm));
         break;
+    case 0x8f: /* POP r/m16 */
+        read_ipmodrm<atype>(&modrm, seg_override);
+        write_modrm<otype, atype>(&modrm, pop<otype, atype>());
+        break;
     case 0x90: /* NOP */
         break;
     case 0x91:
@@ -1684,3 +1690,5 @@ void emu8086_read(void* addr, uint16_t seg, uint16_t base, size_t size)
         ((uint8_t*)addr)[i] = read<uint8_t>(emu_addr + i);
     }
 }
+
+#endif
