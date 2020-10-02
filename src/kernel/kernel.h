@@ -6,19 +6,17 @@
 #include <kernel/arch.h>
 #include <kernel/mem.h>
 #include <kernel/sections.h>
-#include <kernel/video/video.h>
 #include <string.h>
 #include <strings.h>
 
-#define BREAKPOINT __asm__ __volatile__("xchg %bx, %bx\r\n")
+#define BREAKPOINT   __asm__ __volatile__("xchg %bx, %bx\r\n")
+#define kprintf(...) boot_printf(__VA_ARGS__)
 
 /* The main kernel structure */
 typedef struct
 {
-    BootParams              boot_params;
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
-    Video                   video;
     uint64_t                nx_mask;
     uint64_t*               cr3;
     char*                   initram;
@@ -26,9 +24,6 @@ typedef struct
 } Kernel;
 
 extern Kernel gKernel;
-
-/* print */
-void kprintf(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 /* gdt */
 void init_gdt(void);

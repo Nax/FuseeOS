@@ -12,9 +12,7 @@ static void mfs_read_page(MfsPage* page, uint64_t inode)
 void mfs_init(void)
 {
     disk_read_raw((char*)&gMetadata, MFS_METADATA_PAGE * 8, MFS_PAGE_SIZE / 512);
-    print("Found root inode: ");
-    puthex64(gMetadata.meta.root);
-    putchar('\n');
+    boot_printf("Found root inode: 0x%llx\n", gMetadata.meta.root);
 }
 
 uint64_t mfs_lookup_at(uint64_t inode, const char* name)
@@ -29,18 +27,12 @@ uint64_t mfs_lookup_at(uint64_t inode, const char* name)
 
     for (;;)
     {
-        if (dir->namelen == namelen && memcmp(name, dir->name, namelen) == 0)
-        {
-            return dir->inode;
-        }
+        if (dir->namelen == namelen && memcmp(name, dir->name, namelen) == 0) { return dir->inode; }
         dir = (MfsDirEntry*)(((char*)(dir + 1)) + dir->namelen);
     }
 }
 
-uint64_t mfs_lookup_root(const char* name)
-{
-    return mfs_lookup_at(gMetadata.meta.root, name);
-}
+uint64_t mfs_lookup_root(const char* name) { return mfs_lookup_at(gMetadata.meta.root, name); }
 
 uint64_t mfs_file_size(uint64_t inode)
 {
@@ -74,18 +66,15 @@ void mfs_read(char* dst, uint64_t inode)
     uint32_t tmp;
 
     npages = (mfs_file_size(inode) + MFS_PAGE_SIZE - 1) / MFS_PAGE_SIZE;
-    if (!npages)
-        return;
+    if (!npages) return;
     mfs_read_page(&gPages[0], inode);
     tmp = (npages > MFS_DATA_POINTERS) ? MFS_DATA_POINTERS : npages;
     dst = mfs_read_data(dst, tmp);
     npages -= tmp;
-    if (!npages)
-        return;
+    if (!npages) return;
     mfs_read_page(&gPages[1], gPages[0].file.idata);
     tmp = (npages > MFS_IDATA_POINTERS) ? MFS_IDATA_POINTERS : npages;
     dst = mfs_read_idata(dst, tmp);
     npages -= tmp;
-    if (!npages)
-        return;
+    if (!npages) return;
 }

@@ -12,7 +12,7 @@ void disk_read_raw(char* dst, uint64_t lba, uint32_t sectors)
     dap.dst_offset  = (uint16_t)((uint32_t)buffer);
     dap.dst_segment = 0;
 
-    lba += g_kernel_params.mbr_partition.lba_start;
+    lba += gBootParams.mbr_partition.lba_start;
 
     while (sectors)
     {
@@ -22,7 +22,7 @@ void disk_read_raw(char* dst, uint64_t lba, uint32_t sectors)
         dap.transfer_size = nsectors;
 
         args.eax = 0x4200;
-        args.edx = g_kernel_params.boot_drive;
+        args.edx = gBootParams.boot_drive;
         args.esi = (uint16_t)((uint32_t)&dap);
         bios_call(0x13, &args);
 

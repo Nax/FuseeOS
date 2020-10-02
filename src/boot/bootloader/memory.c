@@ -24,14 +24,14 @@ void memory_detect(void)
 
         if (mem.size != 0 && mem.type == 1)
         {
-            g_kernel_params.mem_map[map_curs].base = mem.base;
-            g_kernel_params.mem_map[map_curs].size = mem.size;
+            gBootParams.mem_map[map_curs].base = mem.base;
+            gBootParams.mem_map[map_curs].size = mem.size;
             map_curs++;
 
             if (mem.base >= 0x100000)
             {
-                g_kernel_params.mem_free[free_curs].base = mem.base;
-                g_kernel_params.mem_free[free_curs].size = mem.size;
+                gBootParams.mem_free[free_curs].base = mem.base;
+                gBootParams.mem_free[free_curs].size = mem.size;
                 free_curs++;
             }
         }
@@ -39,16 +39,14 @@ void memory_detect(void)
         if (args.ebx == 0) break;
     }
 
-    puts("Detected memory:");
+    boot_printf("Detected memory:\n");
     for (int i = 0; i < map_curs; ++i)
     {
-        print("  ");
-        puthex64(g_kernel_params.mem_map[i].base);
-        print(" - ");
-        puthex64(g_kernel_params.mem_map[i].base + g_kernel_params.mem_map[i].size - 1);
-        putchar('\n');
+        boot_printf("  0x%llx - 0x%llx\n",
+                    gBootParams.mem_map[i].base,
+                    gBootParams.mem_map[i].base + gBootParams.mem_map[i].size - 1);
     }
-    putchar('\n');
+    boot_printf("\n");
 }
 
 void* memory_alloc(uint32_t size)
@@ -62,11 +60,11 @@ void* memory_alloc(uint32_t size)
     base = 0;
     for (int i = 0; i < 32; ++i)
     {
-        if (g_kernel_params.mem_free[i].size >= size)
+        if (gBootParams.mem_free[i].size >= size)
         {
-            base = g_kernel_params.mem_free[i].base;
-            g_kernel_params.mem_free[i].base += size;
-            g_kernel_params.mem_free[i].size -= size;
+            base = gBootParams.mem_free[i].base;
+            gBootParams.mem_free[i].base += size;
+            gBootParams.mem_free[i].size -= size;
             break;
         }
     }

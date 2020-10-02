@@ -7,12 +7,11 @@ _EXTERNC _NORETURN void kmain(BootParams* params)
     bzero(&gKernel, sizeof(gKernel));
 
     /* Copy the boot parameters */
-    memcpy(&gKernel.boot_params, params, sizeof(*params));
+    memcpy(&gBootParams, params, sizeof(*params));
 
+    kprintf("FuseeOS kernel loaded\n");
     init_physical_mapping();
-
-    video_init();
-    kprintf("FuseeOS Kernel\n");
+    kprintf("Physical memory loaded\n");
 
     arch_init();
 

@@ -1,3 +1,4 @@
+#include <libboot/libboot.h>
 #include <stdint.h>
 
 extern const uint16_t gFont[];

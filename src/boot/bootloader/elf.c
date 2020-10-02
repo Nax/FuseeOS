@@ -9,9 +9,7 @@ uint64_t elf_load(const char* name)
     char*       base = initram_lookup(name);
     char*       tmp;
 
-    print("Found image ");
-    print(name);
-    putchar('\n');
+    boot_printf("Found image %s\n", name);
 
     ehdr = (Elf64_Ehdr*)base;
     phdr = (Elf64_Phdr*)(base + ehdr->e_phoff);

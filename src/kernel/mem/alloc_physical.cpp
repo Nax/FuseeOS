@@ -9,8 +9,7 @@ static void mark_page_free(uint64_t page)
     {
         PhysicalMemoryBlock* mblock = alloc->blocks + i;
 
-        if (!(page >= mblock->base && page < mblock->base + mblock->npages * PAGESIZE))
-            continue;
+        if (!(page >= mblock->base && page < mblock->base + mblock->npages * PAGESIZE)) continue;
         bitmap_off = ((page - mblock->base) / PAGESIZE);
         for (int j = 0; j < PMB_MAX_ORDER; ++j)
         {
@@ -21,8 +20,7 @@ static void mark_page_free(uint64_t page)
             if ((mblock->bitmap[j][bitmap_off / 8] & (3 << (bitmap_off & ~1))) == 0)
             {
                 bitmap_off /= 2;
-            }
-            else
+            } else
             {
                 return;
             }
@@ -40,13 +38,11 @@ static void mark_page_used(uint64_t page)
     {
         PhysicalMemoryBlock* mblock = alloc->blocks + i;
 
-        if (!(page >= mblock->base && page < mblock->base + mblock->npages * PAGESIZE))
-            continue;
+        if (!(page >= mblock->base && page < mblock->base + mblock->npages * PAGESIZE)) continue;
         bitmap_off = ((page - mblock->base) / PAGESIZE);
         for (int j = 0; j < PMB_MAX_ORDER; ++j)
         {
-            if ((mblock->bitmap[j][bitmap_off / 8] & (1 << (bitmap_off % 8))))
-                return;
+            if ((mblock->bitmap[j][bitmap_off / 8] & (1 << (bitmap_off % 8)))) return;
             /* Set the page in the bitmap */
             mblock->bitmap[j][bitmap_off / 8] |= (1 << (bitmap_off % 8));
             bitmap_off /= 2;
@@ -65,11 +61,10 @@ void init_physical_memory(void)
     i = 0;
     for (;;)
     {
-        KernelBootMemRegion* reg    = gKernel.boot_params.mem_map + i;
+        BootMemRegion*       reg    = gBootParams.mem_map + i;
         PhysicalMemoryBlock* mblock = alloc->blocks + i;
 
-        if (reg->size == 0)
-            break;
+        if (reg->size == 0) break;
 
         mblock->base      = reg->base;
         mblock->npages    = reg->size / PAGESIZE;
@@ -88,7 +83,7 @@ void init_physical_memory(void)
     /* Unmark free memory */
     for (i = 0; i < 32; ++i)
     {
-        KernelBootMemRegion* reg = gKernel.boot_params.mem_free + i;
+        BootMemRegion* reg = gBootParams.mem_free + i;
         for (unsigned int j = 0; j < reg->size / PAGESIZE; ++j)
         {
             mark_page_free(reg->base + j * PAGESIZE);
@@ -105,16 +100,14 @@ uint64_t alloc_phys_pages(int npages)
     uint64_t                 tmp;
     uint64_t                 page;
 
-    if (npages != 1)
-        return BADPAGE;
+    if (npages != 1) return BADPAGE;
 
     i = 0;
     for (;;)
     {
         PhysicalMemoryBlock* mblock = alloc->blocks + i;
 
-        if (mblock->npages == 0)
-            break;
+        if (mblock->npages == 0) break;
 
         uint64_t* bitmap = (uint64_t*)(mblock->bitmap[0]);
 
@@ -143,10 +136,7 @@ uint64_t alloc_phys_pages(int npages)
     return BADPAGE;
 }
 
-uint64_t alloc_phys(uint64_t size)
-{
-    return alloc_phys_pages((size + PAGESIZE - 1) / PAGESIZE);
-}
+uint64_t alloc_phys(uint64_t size) { return alloc_phys_pages((size + PAGESIZE - 1) / PAGESIZE); }
 
 uint64_t alloc_phys_early(int npages)
 {
@@ -157,11 +147,11 @@ uint64_t alloc_phys_early(int npages)
     base = 0;
     for (int i = 0; i < 32; ++i)
     {
-        if (gKernel.boot_params.mem_free[i].size >= size)
+        if (gBootParams.mem_free[i].size >= size)
         {
-            base = gKernel.boot_params.mem_free[i].base;
-            gKernel.boot_params.mem_free[i].base += size;
-            gKernel.boot_params.mem_free[i].size -= size;
+            base = gBootParams.mem_free[i].base;
+            gBootParams.mem_free[i].base += size;
+            gBootParams.mem_free[i].size -= size;
             break;
         }
     }
@@ -178,7 +168,4 @@ void free_phys_pages(uint64_t page, size_t npages)
     gKernel.pmem.pages_free += npages;
 }
 
-void free_phys(uint64_t page, size_t size)
-{
-    free_phys_pages(page, page_count(size));
-}
+void free_phys(uint64_t page, size_t size) { free_phys_pages(page, page_count(size)); }

@@ -43,10 +43,10 @@ static uint64_t alloc_zero_page(void)
     return page;
 }
 
-template <AlterMode mode, int order>
-struct PageAlterator
+template <AlterMode mode, int order> struct PageAlterator
 {
-    static void run(uint64_t* dir, uint64_t dir_base, uint64_t virt_start, uint64_t phys_start, uint64_t npages, uint64_t flags)
+    static void
+    run(uint64_t* dir, uint64_t dir_base, uint64_t virt_start, uint64_t phys_start, uint64_t npages, uint64_t flags)
     {
         uint64_t mapping;
         uint64_t tmp;
@@ -93,13 +93,13 @@ struct PageAlterator
 
             if (order && mode == AlterMode::UnmapTree)
             {
-                if ((tmp & 1) == 0)
-                    continue;
+                if ((tmp & 1) == 0) continue;
             }
 
             if (order)
             {
-                PageAlterator<mode, order - 1>::run((uint64_t*)physical_to_virtual(tmp & MMASK_PHYS), mapping, virt_start, phys_start, npages, flags);
+                PageAlterator<mode, order - 1>::run(
+                    (uint64_t*)physical_to_virtual(tmp & MMASK_PHYS), mapping, virt_start, phys_start, npages, flags);
             }
 
             if ((!order && mode == AlterMode::Unmap) || (order && mode == AlterMode::UnmapTree))
@@ -111,32 +111,31 @@ struct PageAlterator
     }
 };
 
-template <AlterMode mode>
-struct PageAlterator<mode, -1>
+template <AlterMode mode> struct PageAlterator<mode, -1>
 {
-    static void run(uint64_t* dir, uint64_t dir_base, uint64_t virt_start, uint64_t phys_start, uint64_t npages, uint64_t flags)
-    {
-    }
+    static void
+    run(uint64_t* dir, uint64_t dir_base, uint64_t virt_start, uint64_t phys_start, uint64_t npages, uint64_t flags)
+    {}
 };
 
-template <AlterMode mode>
-void alter_pages(void* ptr, uint64_t phys, size_t size, int prot)
+template <AlterMode mode> void alter_pages(void* ptr, uint64_t phys, size_t size, int prot)
 {
     uint64_t flags;
 
-    if (!size)
-        return;
+    if (!size) return;
 
     flags = 0;
 
-    if (prot & KPROT_WRITE)
-        flags |= 0x2;
-    if (prot & KPROT_USER)
-        flags |= 0x4;
-    if (!(prot & KPROT_EXECUTE))
-        flags |= gKernel.nx_mask;
+    if (prot & KPROT_WRITE) flags |= 0x2;
+    if (prot & KPROT_USER) flags |= 0x4;
+    if (!(prot & KPROT_EXECUTE)) flags |= gKernel.nx_mask;
 
-    PageAlterator<mode, 3>::run((uint64_t*)physical_to_virtual((uint64_t)gKernel.cr3), 0, (uint64_t)ptr, phys, (size + PAGESIZE - 1) / PAGESIZE, flags);
+    PageAlterator<mode, 3>::run((uint64_t*)physical_to_virtual((uint64_t)gKernel.cr3),
+                                0,
+                                (uint64_t)ptr,
+                                phys,
+                                (size + PAGESIZE - 1) / PAGESIZE,
+                                flags);
     __asm__ __volatile__("mov %0, %%cr3\r\n" ::"a"(gKernel.cr3));
 }
 
@@ -153,7 +152,7 @@ void init_physical_mapping(void)
     uint64_t  pdp;
     uint64_t* vpdp;
 
-    gKernel.cr3 = (uint64_t*)gKernel.boot_params.cr3;
+    gKernel.cr3 = (uint64_t*)gBootParams.cr3;
     pdp         = alloc_phys_early(1);
     vpdp        = (uint64_t*)pdp;
 
@@ -165,35 +164,22 @@ void init_physical_mapping(void)
     __asm__ __volatile__("mov %0, %%cr3\r\n" ::"a"(gKernel.cr3));
 }
 
-void* physical_to_virtual(uint64_t physical)
-{
-    return (void*)(0xffff800000000000 | physical);
-}
+void* physical_to_virtual(uint64_t physical) { return (void*)(0xffff800000000000 | physical); }
 
-void kmtouch(void* ptr, size_t size, int prot)
-{
-    alter_pages<AlterMode::Touch>(ptr, 0, size, prot);
-}
+void kmtouch(void* ptr, size_t size, int prot) { alter_pages<AlterMode::Touch>(ptr, 0, size, prot); }
 
-void kmprotect(void* ptr, size_t size, int prot)
-{
-    alter_pages<AlterMode::Protect>(ptr, 0, size, prot);
-}
+void kmprotect(void* ptr, size_t size, int prot) { alter_pages<AlterMode::Protect>(ptr, 0, size, prot); }
 
 void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags)
 {
     size = page_round(size);
 
-    if (!ptr && ((flags & KMAP_FIXED) == 0))
-    {
-        ptr = alloc_virtual(size);
-    }
+    if (!ptr && ((flags & KMAP_FIXED) == 0)) { ptr = alloc_virtual(size); }
 
     if (flags & KMAP_ANONYMOUS)
     {
         alter_pages<AlterMode::MapAnon>(ptr, 0, size, prot);
-    }
-    else
+    } else
     {
         alter_pages<AlterMode::Map>(ptr, phys, size, prot);
     }
@@ -201,21 +187,22 @@ void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags)
     return ptr;
 }
 
-void kmunmap(void* ptr, size_t size)
-{
-    alter_pages<AlterMode::Unmap>(ptr, 0, size, 0);
-}
+void kmunmap(void* ptr, size_t size) { alter_pages<AlterMode::Unmap>(ptr, 0, size, 0); }
 
-void kmunmap_tree(void* ptr, size_t size)
-{
-    alter_pages<AlterMode::UnmapTree>(ptr, 0, size, 0);
-}
+void kmunmap_tree(void* ptr, size_t size) { alter_pages<AlterMode::UnmapTree>(ptr, 0, size, 0); }
 
 void kmprotect_kernel(void)
 {
-    kmtouch(&__KERNEL_IMAGE_START, &__KERNEL_IMAGE_END - &__KERNEL_IMAGE_START, KPROT_READ | KPROT_WRITE | KPROT_EXECUTE);
-    kmprotect(&__KERNEL_SECTION_EXEC_START, &__KERNEL_SECTION_EXEC_END - &__KERNEL_SECTION_EXEC_START, KPROT_READ | KPROT_EXECUTE);
-    kmprotect(&__KERNEL_SECTION_RODATA_START, &__KERNEL_SECTION_RODATA_END - &__KERNEL_SECTION_RODATA_START, KPROT_READ);
-    kmprotect(&__KERNEL_SECTION_DATA_START, &__KERNEL_SECTION_DATA_END - &__KERNEL_SECTION_DATA_START, KPROT_READ | KPROT_WRITE);
-    kmprotect(&__KERNEL_SECTION_BSS_START, &__KERNEL_SECTION_BSS_END - &__KERNEL_SECTION_BSS_START, KPROT_READ | KPROT_WRITE);
+    kmtouch(
+        &__KERNEL_IMAGE_START, &__KERNEL_IMAGE_END - &__KERNEL_IMAGE_START, KPROT_READ | KPROT_WRITE | KPROT_EXECUTE);
+    kmprotect(&__KERNEL_SECTION_EXEC_START,
+              &__KERNEL_SECTION_EXEC_END - &__KERNEL_SECTION_EXEC_START,
+              KPROT_READ | KPROT_EXECUTE);
+    kmprotect(
+        &__KERNEL_SECTION_RODATA_START, &__KERNEL_SECTION_RODATA_END - &__KERNEL_SECTION_RODATA_START, KPROT_READ);
+    kmprotect(&__KERNEL_SECTION_DATA_START,
+              &__KERNEL_SECTION_DATA_END - &__KERNEL_SECTION_DATA_START,
+              KPROT_READ | KPROT_WRITE);
+    kmprotect(
+        &__KERNEL_SECTION_BSS_START, &__KERNEL_SECTION_BSS_END - &__KERNEL_SECTION_BSS_START, KPROT_READ | KPROT_WRITE);
 }

@@ -9,8 +9,6 @@
 
 #define PAGESIZE 4096
 
-extern BootParams g_kernel_params;
-
 typedef struct
 {
     uint32_t eax;
@@ -19,6 +17,9 @@ typedef struct
     uint32_t edx;
     uint32_t esi;
     uint32_t edi;
+
+    uint16_t es;
+    uint16_t fs;
 } _PACKED BiosArgs;
 
 typedef struct

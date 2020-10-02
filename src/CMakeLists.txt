@@ -5,8 +5,8 @@ include_directories(
 )
 
 set(FLAGS_COMMON        -fomit-frame-pointer)
-set(FLAGS_FREESTANDING  ${FLAGS_COMMON} -ffreestanding -nostdlib $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
-set(FLAGS_BOOT          ${FLAGS_FREESTANDING} -m32 -mno-sse -mno-sse2 -fno-exceptions $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti> $<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>)
+set(FLAGS_FREESTANDING  ${FLAGS_COMMON} -ffreestanding -nostdlib -fno-exceptions $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti> $<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics> $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
+set(FLAGS_BOOT          ${FLAGS_FREESTANDING} -mno-sse -mno-sse2)
 set(FLAGS_KERNEL        ${FLAGS_FREESTANDING} -mcmodel=kernel -mno-red-zone)
 
 add_subdirectory(libc)

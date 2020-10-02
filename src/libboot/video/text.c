@@ -1,16 +1,17 @@
-#include <kernel/kernel.h>
+#include <libboot/libboot.h>
+#include <stddef.h>
 
-void video_putchar_text(char c, uint16_t x, uint16_t y)
+void video_text_putchar(char c, uint16_t x, uint16_t y)
 {
-    Video*             v   = &gKernel.video;
+    BootVideo*         v   = &gBootParams.video;
     volatile uint16_t* buf = (volatile uint16_t*)v->framebuffer;
 
     buf[y * v->text_max_x + x] = 0x0f00 | (c & 0xff);
 }
 
-void video_scroll_text(void)
+void video_text_scroll(void)
 {
-    Video*             v   = &gKernel.video;
+    BootVideo*         v   = &gBootParams.video;
     volatile uint16_t* buf = (volatile uint16_t*)v->framebuffer;
     size_t             tmp;
 

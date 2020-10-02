@@ -1,6 +1,8 @@
-#include <cstdarg>
-#include <kernel/kernel.h>
+#include <libboot/libboot.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #define TYPE_CHAR      0
 #define TYPE_SHORT     1
@@ -12,10 +14,10 @@
 
 static const char* const hex_chars = "0123456789abcdef";
 
-static void putchar(int c)
+static void putchar(uint8_t c)
 {
     video_putchar(c);
-    out8(0xe9, c);
+    __asm__ __volatile__("outb %0, $0xe9\r\n" ::"a"(c));
 }
 
 static void print(const char* str)
@@ -58,7 +60,7 @@ static const char* fmt_udec(uintmax_t num)
 
     memset(buffer, 0, sizeof(buffer));
     cursor  = 0;
-    divisor = 10000000000000000000UL;
+    divisor = 10000000000000000000ULL;
 
     for (int i = 0; i < 20; ++i)
     {
@@ -92,7 +94,7 @@ static const char* fmt_hex(uintmax_t num)
     return buffer;
 }
 
-static uintmax_t integer_arg(std::va_list list, int type)
+static uintmax_t integer_arg(va_list list, int type)
 {
     switch (type)
     {
@@ -114,19 +116,21 @@ static uintmax_t integer_arg(std::va_list list, int type)
     return 0;
 }
 
-void kprintf(const char* fmt, ...)
+void boot_printf(const char* fmt, ...)
 {
-    std::va_list ap;
-    size_t       len;
-    char         buffer[1024];
-    const char*  substr;
-    int          arg_type;
-    char         c;
-    char         cbuf[2];
-    size_t       i{};
-    size_t       j{};
-    bool         format_over;
+    va_list     ap;
+    size_t      len;
+    char        buffer[1024];
+    const char* substr;
+    int         arg_type;
+    char        c;
+    char        cbuf[2];
+    size_t      i;
+    size_t      j;
+    int         format_over;
 
+    i = 0;
+    j = 0;
     va_start(ap, fmt);
     for (;;)
     {
@@ -137,7 +141,7 @@ void kprintf(const char* fmt, ...)
             buffer[j++] = c;
             continue;
         }
-        format_over = false;
+        format_over = 0;
         arg_type    = TYPE_INT;
         while (!format_over)
         {
@@ -164,25 +168,25 @@ void kprintf(const char* fmt, ...)
                 break;
             case '%':
                 substr      = "%";
-                format_over = true;
+                format_over = 1;
                 break;
             case 's':
                 substr      = va_arg(ap, const char*);
-                format_over = true;
+                format_over = 1;
                 break;
             case 'c':
                 cbuf[0]     = (char)va_arg(ap, int);
                 cbuf[1]     = 0;
                 substr      = cbuf;
-                format_over = true;
+                format_over = 1;
                 break;
             case 'x':
                 substr      = fmt_hex(integer_arg(ap, arg_type));
-                format_over = true;
+                format_over = 1;
                 break;
             case 'u':
                 substr      = fmt_udec(integer_arg(ap, arg_type));
-                format_over = true;
+                format_over = 1;
                 break;
             default:
                 break;
