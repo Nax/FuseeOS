@@ -26,30 +26,27 @@ gdt_real_mode_descriptor:
     .short  gdt_real_mode_descriptor - gdt_real_mode - 1
     .short  gdt_real_mode
     .short  0
+    .short  0
+    .short  0
 
-.code32
+.code64
 .section .text, "ax"
 
 /* Switch to real mode */
 .global switch_mode_real
 switch_mode_real:
     /* We need to fix the return address */
-    sub     $26, %esp
-    mov     %eax, 0(%esp)
-    mov     26(%esp), %ax
-    mov     %ax, 28(%esp)
-    mov     %ebx, 4(%esp)
-    mov     %ecx, 8(%esp)
-    mov     %edx, 12(%esp)
-    mov     %esi, 16(%esp)
-    mov     %edi, 20(%esp)
-    mov     %ebp, 24(%esp)
+    pop %rax
+    sub $2, %rsp
+    mov %ax, (%rsp)
 
     /* Load a real mode GDT */
     lgdt (gdt_real_mode_descriptor)
 
     /* Enter 16 bit protected mode */
-    jmp $0x08,$pmode16
+    pushq $0x08
+    pushq $pmode16
+    retfq
 
 .code16
 pmode16:
@@ -61,9 +58,9 @@ pmode16:
     mov %ax, %gs
     mov %ax, %ss
 
-    /* Disable protected mode */
+    /* Disable long mode */
     mov %cr0, %eax
-    and $0xfffe, %ax
+    and $0x7ffffffe, %eax
     mov %eax, %cr0
 
     /* Jump into real mode */
@@ -81,15 +78,5 @@ rmode:
     mov %ax, %gs
     mov %ax, %ss
 
-    /* Restore registers */
-    mov 0(%esp), %eax
-    mov 4(%esp), %ebx
-    mov 8(%esp), %ecx
-    mov 12(%esp), %edx
-    mov 16(%esp), %esi
-    mov 20(%esp), %edi
-    mov 24(%esp), %ebp
-
     /* Leave */
-    add $28, %esp
     ret

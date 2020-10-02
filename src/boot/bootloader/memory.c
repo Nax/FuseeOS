@@ -16,13 +16,11 @@ void memory_detect(void)
         args.eax = 0xe820;
         args.ecx = 24;
         args.edx = 0x534d4150;
-        args.edi = (uint32_t)&mem;
+        args.edi = (uintptr_t)&mem;
 
-        if (!bios_call(0x15, &args))
-            break;
+        if (bios_call(0x15, &args)) break;
 
-        if (args.eax != 0x534d4150)
-            break;
+        if (args.eax != 0x534d4150) break;
 
         if (mem.size != 0 && mem.type == 1)
         {
@@ -38,8 +36,7 @@ void memory_detect(void)
             }
         }
 
-        if (args.ebx == 0)
-            break;
+        if (args.ebx == 0) break;
     }
 
     puts("Detected memory:");
@@ -56,8 +53,8 @@ void memory_detect(void)
 
 void* memory_alloc(uint32_t size)
 {
-    uint32_t npages;
-    uint32_t base;
+    uint64_t npages;
+    uint64_t base;
 
     npages = (size + PAGESIZE - 1) / PAGESIZE;
     size   = npages * PAGESIZE;

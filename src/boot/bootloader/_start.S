@@ -21,7 +21,7 @@ start:
     mov %ax, %ss
 
     /* Force CS = 0 */
-    jmp $0x00, $start2
+    jmp $0x00,$start2
 
 start2:
     /* Set up the stack */
@@ -58,6 +58,9 @@ start2:
     /* Enable the A20 gate */
     call enable_a20
 
+    /* Identity map the first few megabytes */
+    call bootstrap_paging
+
     /* We will switch to protected mode soon */
     /* Make sure to zero extend relevant registers first */
     xor %eax, %eax
@@ -71,24 +74,27 @@ start2:
     /* We will change that stack once we are in pmode */
     mov $0x7c00, %esp
 
-    /* enter pmode */
-    call switch_mode_protected
+    /* Enable PAE and PGE */
+    mov %cr4, %eax
+    or $0xa0, %eax
+    mov %eax, %cr4
 
+    /* Set the long mode bit in the EFER */
+    mov $0xc0000080, %ecx
+    rdmsr
+    or $0x00000100, %eax
+    wrmsr
+
+    /* enter lmode */
+    call switch_mode_long
+
+.code64
     /* Enter main */
-.code32
-    mov $saved_mbr_record, %eax
-    push %eax
-
-    mov (saved_disk), %eax
-    push %eax
-
-    xor %eax, %eax
-    push %eax
-
+    mov $saved_mbr_record, %esi
+    mov (saved_disk), %edi
     jmp bmain
 
 .code16
-
 /* SI: Str */
 print_bios:
     pusha

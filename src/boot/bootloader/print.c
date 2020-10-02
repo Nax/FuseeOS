@@ -64,8 +64,7 @@ void print(const char* str)
     for (;;)
     {
         c = str[i++];
-        if (!c)
-            break;
+        if (!c) break;
         putchar(c);
     }
 }
