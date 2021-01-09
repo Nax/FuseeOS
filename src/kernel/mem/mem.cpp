@@ -41,7 +41,8 @@ void init_mem(void)
     free_phys((uint64_t)gBootParams.initram, gKernel.initram_size);
 
     /* Remap the video buffer */
-    gBootParams.video.framebuffer = physical_to_virtual((uint64_t)gBootParams.video.framebuffer);
+    gBootParams.video.framebuffer = kmmap(nullptr, (uint64_t)gBootParams.video.framebuffer, gBootParams.video.pitch * gBootParams.video.height, KPROT_READ | KPROT_WRITE, 0);
+    kprintf("Video Buffer: 0x%lx\n", (uint64_t)gBootParams.video.framebuffer);
 
     /* Free all lomem paging info */
     // kmunmap_tree(nullptr, 0x100000000);
