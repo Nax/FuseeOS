@@ -30,6 +30,7 @@ inline static size_t page_count(size_t size) { return (size + PAGESIZE - 1) / PA
 inline static size_t page_round(size_t size) { return page_count(size) * PAGESIZE; }
 
 #include <kernel/mem/HeapAlloc.h>
+#include <kernel/mem/IOAlloc.h>
 
 typedef struct
 {

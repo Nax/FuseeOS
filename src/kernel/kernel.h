@@ -18,6 +18,7 @@ typedef struct Kernel
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
     HeapAlloc               heap;
+    IOAlloc                 io;
     uint64_t                nx_mask;
     uint64_t*               cr3;
     char*                   initram;

@@ -25,7 +25,6 @@ void init_mem(void)
 {
     /* Initialize the memory subsystems */
     init_physical_memory();
-    init_virtual_memory();
 
     /* Detect availability of the NX flag */
     init_nx();
