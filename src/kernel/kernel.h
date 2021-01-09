@@ -13,10 +13,11 @@
 #define kprintf(...) boot_printf(__VA_ARGS__)
 
 /* The main kernel structure */
-typedef struct
+typedef struct Kernel
 {
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
+    HeapAlloc               heap;
     uint64_t                nx_mask;
     uint64_t*               cr3;
     char*                   initram;

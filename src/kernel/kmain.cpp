@@ -4,8 +4,6 @@ Kernel gKernel;
 
 _EXTERNC _NORETURN void kmain(BootParams* params)
 {
-    bzero(&gKernel, sizeof(gKernel));
-
     /* Copy the boot parameters */
     memcpy(&gBootParams, params, sizeof(*params));
 

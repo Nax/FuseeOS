@@ -35,7 +35,7 @@ void init_mem(void)
 
     /* Copy the initram */
     gKernel.initram_size = gBootParams.initram_size;
-    gKernel.initram      = (char*)kmmap(nullptr, 0, gKernel.initram_size, KPROT_READ, KMAP_ANONYMOUS);
+    gKernel.initram      = (char*)kmalloc(gKernel.initram_size);
     memcpy(gKernel.initram, gBootParams.initram, gKernel.initram_size);
 
     /* Free the original initram */
@@ -46,4 +46,15 @@ void init_mem(void)
 
     /* Free all lomem paging info */
     // kmunmap_tree(nullptr, 0x100000000);
+}
+
+void* kmalloc(size_t size)
+{
+    return gKernel.heap.alloc(size);
+}
+
+void kfree(void* addr)
+{
+    if (addr)
+        gKernel.heap.free(addr);
 }

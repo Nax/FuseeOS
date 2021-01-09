@@ -29,6 +29,8 @@
 inline static size_t page_count(size_t size) { return (size + PAGESIZE - 1) / PAGESIZE; }
 inline static size_t page_round(size_t size) { return page_count(size) * PAGESIZE; }
 
+#include <kernel/mem/HeapAlloc.h>
+
 typedef struct
 {
     uint64_t base;
@@ -78,5 +80,8 @@ void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags);
 void  kmunmap(void* ptr, size_t size);
 void  kmunmap_tree(void* ptr, size_t size);
 void  kmprotect_kernel(void);
+
+void*   kmalloc(size_t size);
+void    kfree(void* addr);
 
 #endif

@@ -2,6 +2,7 @@
 .extern kmain
 
 .section .text
+
 /* rdi: Kernel args */
 _start:
     /* Set the kernel stack */
