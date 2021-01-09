@@ -63,4 +63,6 @@ inline static void out16(uint16_t port, uint16_t value) { ASM("outw %0, %1\r\n" 
 
 inline static void out32(uint16_t port, uint32_t value) { ASM("outl %0, %1\r\n" ::"a"(value), "Nd"(port)); }
 
+inline static void io_wait(void) { out8(0x80, 0x00); }
+
 #endif
