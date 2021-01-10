@@ -1,7 +1,25 @@
 file(GLOB_RECURSE SOURCES "*.c")
 
+set(CRT_DIR "${CMAKE_BINARY_DIR}/crt")
+set(CRT0 "${CRT_DIR}/crt0.o")
+make_directory("${CRT_DIR}")
+
 add_library(libc STATIC "${SOURCES}")
 set_target_properties(libc PROPERTIES OUTPUT_NAME "c")
+
+add_custom_command(
+    OUTPUT "${CRT0}"
+    COMMAND ${CMAKE_C_COMPILER} -c "${CMAKE_CURRENT_SOURCE_DIR}/crt0.S" -o "${CRT0}"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/crt0.S"
+    COMMENT "Building crt0.o"
+    VERBATIM
+)
+add_custom_target(libc_crt0 DEPENDS "${CRT0}")
+add_dependencies(libc libc_crt0)
+set_target_properties(libc PROPERTIES INTERFACE_LINK_LIBRARIES "${CRT0}")
+#add_library(libc_crt0 IMPORTED STATIC)
+#set_target_properties(libc_crt0 PROPERTIES IMPORTED_LOCATION "${CRT0}")
+#target_link_libraries(libc INTERFACE libc_crt0)
 
 add_library(libc_kernel STATIC "${SOURCES}")
 set_target_properties(libc_kernel PROPERTIES OUTPUT_NAME "c_kernel")

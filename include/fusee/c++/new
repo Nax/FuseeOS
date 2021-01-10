@@ -1,0 +1,11 @@
+#ifndef _CXX_NEW
+#define _CXX_NEW
+
+#include <cstddef>
+
+inline void *operator new(std::size_t, void *p)     throw() { return p; }
+inline void *operator new[](std::size_t, void *p)   throw() { return p; }
+inline void  operator delete  (void *, void *) throw() { };
+inline void  operator delete[](void *, void *) throw() { };
+
+#endif

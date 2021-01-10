@@ -3,6 +3,7 @@
 
 #include <libboot/libboot.h>
 
+#include <kernel/proc/ProcessTree.h>
 #include <kernel/arch.h>
 #include <kernel/mem.h>
 #include <kernel/sections.h>
@@ -19,10 +20,9 @@ typedef struct Kernel
     VirtualMemoryAllocator  vmem;
     HeapAlloc               heap;
     IOAlloc                 io;
+    ProcessTree             procs;
     uint64_t                nx_mask;
     uint64_t*               cr3;
-    char*                   initram;
-    size_t                  initram_size;
 } Kernel;
 
 extern Kernel gKernel;

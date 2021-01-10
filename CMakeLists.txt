@@ -35,6 +35,7 @@ make_directory("${TREE}")
 add_custom_command(
     OUTPUT "${IMAGE}"
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:kernel> "${TREE}/boot/kernel"
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:init> "${TREE}/sbin/init"
     COMMAND ${MKINITRAM} ${INITRAM} "${CMAKE_SOURCE_DIR}/data/initram.txt" "${TREE}"
     COMMAND ${MKVOLUME} ${VOLUME} 67108864 $<TARGET_FILE:bootloader> "${CMAKE_SOURCE_DIR}/data/image.txt" "${TREE}"
     COMMAND ${MKIMAGE} ${IMAGE} $<TARGET_FILE:mbr> "${VOLUME}"

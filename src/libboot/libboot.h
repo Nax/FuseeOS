@@ -34,5 +34,6 @@ typedef struct
 extern BootParams gBootParams;
 
 _EXTERNC void boot_printf(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+_EXTERNC char* initram_lookup(const char* name);
 
 #endif

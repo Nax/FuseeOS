@@ -33,12 +33,10 @@ void init_mem(void)
     kmprotect_kernel();
 
     /* Copy the initram */
-    gKernel.initram_size = gBootParams.initram_size;
-    gKernel.initram      = (char*)kmalloc(gKernel.initram_size);
-    memcpy(gKernel.initram, gBootParams.initram, gKernel.initram_size);
-
-    /* Free the original initram */
-    free_phys((uint64_t)gBootParams.initram, gKernel.initram_size);
+    char* tmp = (char*)kmalloc(gBootParams.initram_size);
+    memcpy(tmp, gBootParams.initram, gBootParams.initram_size);
+    free_phys((uint64_t)gBootParams.initram, gBootParams.initram_size);
+    gBootParams.initram = tmp;
 
     /* Remap the video buffer */
     gBootParams.video.framebuffer = kmmap(nullptr, (uint64_t)gBootParams.video.framebuffer, gBootParams.video.pitch * gBootParams.video.height, KPROT_READ | KPROT_WRITE, 0);

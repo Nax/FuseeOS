@@ -1,6 +1,30 @@
 #ifndef X86_DEFS_H
 #define X86_DEFS_H 1
 
+/* Arch */
+#define ARCH_PROC_REGS      18
+#define ARCH_PROC_EXTRA     512
+
+/* Registers */
+#define X86_REG_AX      0
+#define X86_REG_BX      1
+#define X86_REG_CX      2
+#define X86_REG_DX      3
+#define X86_REG_SI      4
+#define X86_REG_DI      5
+#define X86_REG_SP      6
+#define X86_REG_BP      7
+#define X86_REG_R8      8
+#define X86_REG_R9      9
+#define X86_REG_R10     10
+#define X86_REG_R11     11
+#define X86_REG_R12     12
+#define X86_REG_R13     13
+#define X86_REG_R14     14
+#define X86_REG_R15     15
+#define X86_REG_IP      16
+#define X86_REG_FLAGS   17
+
 /* Flags */
 #define X86_FLAG_CF  0x00000001
 #define X86_FLAG_PF  0x00000004
