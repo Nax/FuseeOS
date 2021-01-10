@@ -43,7 +43,7 @@ void init_mem(void)
     kprintf("Video Buffer: 0x%lx\n", (uint64_t)gBootParams.video.framebuffer);
 
     /* Free all lomem paging info */
-    // kmunmap_tree(nullptr, 0x100000000);
+    kmunmap_tree(nullptr, 0x100000000);
 }
 
 void* kmalloc(size_t size)

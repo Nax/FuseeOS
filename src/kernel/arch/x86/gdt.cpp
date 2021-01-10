@@ -61,8 +61,10 @@ static void make_entry_system(int slot, int code, int priv)
 
 void init_gdt()
 {
-    make_entry_system(0x8, 1, 0);
-    make_entry_system(0x10, 0, 0);
+    make_entry_system(X86_SEL_CODE0, 1, 0);
+    make_entry_system(X86_SEL_DATA0, 0, 0);
+    make_entry_system(X86_SEL_CODE3, 1, 3);
+    make_entry_system(X86_SEL_DATA3, 0, 3);
 
     enable_gdt(&gGdtDescriptor, 0x8, 0x10);
 }

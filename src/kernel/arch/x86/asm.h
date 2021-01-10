@@ -65,4 +65,17 @@ inline static void out32(uint16_t port, uint32_t value) { ASM("outl %0, %1\r\n" 
 
 inline static void io_wait(void) { out8(0x80, 0x00); }
 
+inline static uint64_t getflags()
+{
+    uint64_t tmp;
+
+    ASM(
+        "pushf\r\n"
+        "popq %0\r\n"
+        : "=r"(tmp)
+    );
+
+    return tmp;
+}
+
 #endif

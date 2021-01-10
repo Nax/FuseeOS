@@ -14,6 +14,9 @@ struct Process
 #endif
 };
 
+extern "C" void _exec_proc(Process* proc);
+
 void load_proc_initram(const char* path);
+void exec_proc(Process& proc);
 
 #endif
