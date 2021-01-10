@@ -4,7 +4,5 @@
 #include <kernel/arch/x86/arch.h>
 #include <kernel/arch/x86/asm.h>
 #include <kernel/arch/x86/defs.h>
-#include <kernel/arch/x86/interrupts.h>
-#include <stdint.h>
 
 #endif

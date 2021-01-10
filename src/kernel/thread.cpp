@@ -9,4 +9,9 @@ void thread_init()
     gdt_add_tss(X86_SEL_TSS, (uint64_t)&gKernel.threads[0].arch.tss);
     gdt_reload();
     ASM("ltr %w0\r\n" :: "r"(X86_SEL_TSS));
+
+    /* Set up kernel TLS */
+    wrmsr(X86_MSR_FS_BASE, 0);
+    wrmsr(X86_MSR_GS_BASE, 0);
+    wrmsr(X86_MSR_KERNEL_GS_BASE, (uint64_t)gKernel.threads);
 }

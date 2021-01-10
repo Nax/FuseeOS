@@ -75,11 +75,14 @@
 #define X86_INT_ATA2     X86_INT_OFFSET_PIC + X86_PIC_ATA2
 
 /* MSRs */
-#define X86_MSR_EFER   0xc0000080
-#define X86_MSR_STAR   0xc0000081
-#define X86_MSR_LSTAR  0xc0000082
-#define X86_MSR_CSTAR  0xc0000083
-#define X86_MSR_SFMASK 0xc0000084
+#define X86_MSR_EFER            0xc0000080
+#define X86_MSR_STAR            0xc0000081
+#define X86_MSR_LSTAR           0xc0000082
+#define X86_MSR_CSTAR           0xc0000083
+#define X86_MSR_SFMASK          0xc0000084
+#define X86_MSR_FS_BASE         0xc0000100
+#define X86_MSR_GS_BASE         0xc0000101
+#define X86_MSR_KERNEL_GS_BASE  0xc0000102
 
 /* Page flags */
 #define X86_PAGE_PRESENT      0x01
@@ -111,6 +114,11 @@
 #define X86_IO_PIC1_DATA    0x0021
 #define X86_IO_PIC2_COMMAND 0x00a0
 #define X86_IO_PIC2_DATA    0x00a1
+#define X86_IO_TIMER_DATA0  0x0040
+#define X86_IO_TIMER_DATA1  0x0041
+#define X86_IO_TIMER_DATA2  0x0042
+#define X86_IO_TIMER_CMD    0x0043
+
 
 /* PIC */
 #define X86_PIC_TIMER    0x00

@@ -8,6 +8,7 @@ class ProcessTree
 {
 public:
     Process& create();
+    Process& next();
 
 private:
     Array<Process>  _procs;

@@ -1,6 +1,6 @@
-#include <kernel/arch/x86/defs.h>
 #include <kernel/arch/x86/asm.h>
-#include <kernel/arch/x86/PIC.h>
+#include <kernel/arch/x86/arch.h>
+#include <kernel/arch/x86/defs.h>
 
 #define ICW1_ICW4	        0x01
 #define ICW1_SINGLE	        0x02
@@ -41,8 +41,8 @@ void pic_init()
     io_wait();
 
     /* Set the masks */
-    out8(X86_IO_PIC1_DATA, 0x04);
-    out8(X86_IO_PIC2_DATA, 0x00);
+    out8(X86_IO_PIC1_DATA, 0xfb);
+    out8(X86_IO_PIC2_DATA, 0xff);
 }
 
 void pic_enable(int i)

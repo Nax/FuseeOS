@@ -1,7 +1,7 @@
 #include <kernel/kernel.h>
 #include <stdint.h>
 
-struct IDTEntry
+struct _PACKED IDTDesc
 {
     uint16_t    offset_lo;
     uint16_t    selector;
@@ -13,19 +13,42 @@ struct IDTEntry
     uint16_t    offset_md;
     uint32_t    offset_hi;
     uint32_t    zero;
-} _PACKED;
+};
 
-static IDTEntry gIDT[256];
+static IDTDesc gIDT[256];
 
-struct alignas(16) IDTDescriptor
+struct _PACKED IDTDescPtr
 {
     uint16_t    size;
-    IDTEntry*   idt;
-} _PACKED;
+    IDTDesc*    idt;
+};
 
-static IDTDescriptor gIDTDescriptor = { sizeof(gIDT) - 1, gIDT };
+alignas(16) static IDTDescPtr gIDTDescPtr = { sizeof(gIDT) - 1, gIDT };
 
-void init_idt()
+static void idt_reload()
 {
-    ASM("lidt (%0)\r\n" :: "a"(&gIDTDescriptor));
+    ASM("lidt (%0)\r\n" :: "a"(&gIDTDescPtr));
+}
+
+void idt_init()
+{
+    idt_reload();
+}
+
+void idt_set_gate_interrupt(int interrupt, int dpl, void* handler)
+{
+    IDTDesc* desc;
+
+    desc = &gIDT[interrupt];
+    desc->offset_lo = (uint64_t)handler & 0xffff;
+    desc->selector  = X86_SEL_CODE0;
+    desc->ist       = 0;
+    desc->type      = 0xe;
+    desc->z         = 0;
+    desc->dpl       = dpl;
+    desc->p         = 1;
+    desc->offset_md = ((uint64_t)handler >> 16) & 0xffff;
+    desc->offset_hi = ((uint64_t)handler >> 32);
+    desc->zero      = 0;
+    idt_reload();
 }

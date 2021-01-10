@@ -18,8 +18,8 @@ struct Kernel;
 /* Each thread gets one of these */
 struct KernelThread
 {
-    uint64_t            thread_id;
     Process*            proc;
+    uint64_t            thread_id;
     ArchKernelThread    arch;
     char                stack[8192 - 8 * 2 - sizeof(ArchKernelThread)];
 };
@@ -45,5 +45,9 @@ void gdt_init(void);
 void arch_init(void);
 
 void thread_init();
+void timer_ns(std::uint64_t ns);
+
+_EXTERNC void int_timer(void);
+_EXTERNC void kern_schedule(void);
 
 #endif

@@ -30,7 +30,7 @@ static void load_elf(Process& proc, const char* image)
     kmmap(stack, 0, stack_size, KPROT_USER | KPROT_READ | KPROT_WRITE, KMAP_ANONYMOUS | KMAP_FIXED);
 
     proc.regs[X86_REG_SP] = (uint64_t)(stack + stack_size);
-    proc.regs[X86_REG_FLAGS] = getflags();
+    proc.regs[X86_REG_FLAGS] = getflags() | X86_FLAG_IF;
     proc.regs[X86_REG_IP] = ehdr->e_entry + rambase;
 
     exec_proc(proc);
@@ -50,5 +50,7 @@ void load_proc_initram(const char* path)
 
 void exec_proc(Process& proc)
 {
+    gKernel.threads[0].proc = &proc;
+    timer_ns(100000);
     _exec_proc(&proc);
 }
