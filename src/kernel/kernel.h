@@ -13,23 +13,37 @@
 #define BREAKPOINT   __asm__ __volatile__("xchg %bx, %bx\r\n")
 #define kprintf(...) boot_printf(__VA_ARGS__)
 
+struct Kernel;
+
+/* Each thread gets one of these */
+struct KernelThread
+{
+    uint64_t            thread_id;
+    Process*            proc;
+    ArchKernelThread    arch;
+    char                stack[8192 - 8 * 2 - sizeof(ArchKernelThread)];
+};
+
 /* The main kernel structure */
-typedef struct Kernel
+struct Kernel
 {
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
     HeapAlloc               heap;
     IOAlloc                 io;
     ProcessTree             procs;
+    KernelThread*           threads;
     uint64_t                nx_mask;
     uint64_t*               cr3;
-} Kernel;
+};
 
 extern Kernel gKernel;
 
 /* gdt */
-void init_gdt(void);
+void gdt_init(void);
 
 void arch_init(void);
+
+void thread_init();
 
 #endif

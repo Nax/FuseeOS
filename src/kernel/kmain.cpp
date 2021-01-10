@@ -17,6 +17,9 @@ _EXTERNC _NORETURN void kmain(BootParams* params)
     kprintf("  Pages: 0x%lx\n", gKernel.pmem.pages_total);
     kprintf("  Free:  0x%lx\n", gKernel.pmem.pages_free);
 
+    thread_init();
+    kprintf("Thread-local kernel structures initialized\n");
+
     load_proc_initram("/sbin/init");
 
     for (;;) {}

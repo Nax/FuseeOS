@@ -2,10 +2,11 @@
 #include <kernel/arch/x86/PIC.h>
 
 void init_idt();
+void gdt_init();
 
 void arch_init(void)
 {
-    init_gdt();
+    gdt_init();
     kprintf("GDT initialized\n");
     init_idt();
     kprintf("IDT initialized\n");

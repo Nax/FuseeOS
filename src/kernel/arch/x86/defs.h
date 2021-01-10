@@ -1,10 +1,6 @@
 #ifndef X86_DEFS_H
 #define X86_DEFS_H 1
 
-/* Arch */
-#define ARCH_PROC_REGS      18
-#define ARCH_PROC_EXTRA     512
-
 /* Registers */
 #define X86_REG_AX      0
 #define X86_REG_BX      1
@@ -97,11 +93,12 @@
 #define X86_PAGE_NOEXEC       0x8000000000000000
 
 /* Selectors */
-#define X86_SEL_NULL  0x00
-#define X86_SEL_CODE0 0x08
-#define X86_SEL_DATA0 0x10
-#define X86_SEL_CODE3 0x18
-#define X86_SEL_DATA3 0x20
+#define X86_SEL_NULL    0x00
+#define X86_SEL_CODE0   0x08
+#define X86_SEL_DATA0   0x10
+#define X86_SEL_CODE3   0x18
+#define X86_SEL_DATA3   0x20
+#define X86_SEL_TSS     0x30
 
 /* Rings */
 #define X86_RING0 0
