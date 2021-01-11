@@ -9,8 +9,6 @@
 
 .global x86_sys_handler
 x86_sys_handler:
-    xchg %bx, %bx
-
     /* Boundary check */
     cmp $KERNEL_MAX_SYSCALL, %rax
     jge bad_sys

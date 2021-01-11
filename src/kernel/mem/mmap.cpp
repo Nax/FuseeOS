@@ -120,6 +120,7 @@ template <AlterMode mode> struct PageAlterator<mode, -1>
 
 template <AlterMode mode> void alter_pages(void* ptr, uint64_t phys, size_t size, int prot)
 {
+    uint64_t cr3;
     uint64_t flags;
 
     if (!size) return;
@@ -130,13 +131,14 @@ template <AlterMode mode> void alter_pages(void* ptr, uint64_t phys, size_t size
     if (prot & KPROT_USER) flags |= 0x4;
     if (!(prot & KPROT_EXECUTE)) flags |= gKernel.nx_mask;
 
-    PageAlterator<mode, 3>::run((uint64_t*)physical_to_virtual((uint64_t)gKernel.cr3),
+    ASM ("mov %%cr3, %0\r\n" : "=a"(cr3));
+    PageAlterator<mode, 3>::run((uint64_t*)physical_to_virtual(cr3),
                                 0,
                                 (uint64_t)ptr,
                                 phys,
                                 (size + PAGESIZE - 1) / PAGESIZE,
                                 flags);
-    __asm__ __volatile__("mov %0, %%cr3\r\n" ::"a"(gKernel.cr3));
+    ASM ("mov %0, %%cr3\r\n" :: "a"(cr3));
 }
 
 /*

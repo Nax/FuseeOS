@@ -1,7 +1,8 @@
 .section .text
 .global int_timer
 
-.extern kern_schedule
+.extern proc_schedule
+.extern proc_run_next
 
 #include <kernel/interrupts/common.S>
 
@@ -13,5 +14,8 @@ int_timer:
     mov  $0x20, %eax
     out  %al, $0x20
 
-    /* Resume kernel operations */
-    jmp kern_schedule
+    /* Re-schedule the process */
+    call proc_schedule
+
+    /* Go back to the scheduler */
+    jmp proc_run_next

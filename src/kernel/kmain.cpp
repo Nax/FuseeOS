@@ -20,7 +20,10 @@ _EXTERNC _NORETURN void kmain(BootParams* params)
     thread_init();
     kprintf("Thread-local kernel structures initialized\n");
 
-    load_proc_initram("/sbin/init");
+    Process* p;
+    p = proc_create_initram("/sbin/init");
+    proc_schedule(p);
+    proc_run_next();
 
     for (;;) {}
 }

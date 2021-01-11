@@ -3,11 +3,11 @@
 
 #include <libboot/libboot.h>
 
-#include <kernel/proc/ProcessTree.h>
 #include <kernel/arch.h>
 #include <kernel/defs.h>
 #include <kernel/mem.h>
 #include <kernel/sections.h>
+#include <kernel/proc/Process.h>
 #include <string.h>
 #include <strings.h>
 
@@ -53,7 +53,6 @@ struct Kernel
     VirtualMemoryAllocator  vmem;
     HeapAlloc               heap;
     IOAlloc                 io;
-    ProcessTree             procs;
     KernelThread*           threads;
     uint64_t                nx_mask;
     uint64_t*               cr3;
@@ -70,6 +69,5 @@ void thread_init();
 void timer_ns(std::uint64_t ns);
 
 _EXTERNC void int_timer(void);
-_EXTERNC void kern_schedule(void);
 
 #endif
