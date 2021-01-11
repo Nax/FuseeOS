@@ -1,10 +1,17 @@
 #include <kernel/arch/x86/defs.h>
 
+.extern proc_run
+
 .macro SAVE_CONTEXT
+    /* Restore kernel GS */
     swapgs
+
     push    %rdi
-    mov     %gs:(0), %rdi
-    swapgs
+    mov     %gs:(8), %rdi
+
+    /* Mark the process as being interrupted */
+    movq    $proc_run, (18 * 8 + 512)(%rdi)
+
     mov     %rax,  (X86_REG_AX  * 8)(%rdi)
     mov     %rbx,  (X86_REG_BX  * 8)(%rdi)
     mov     %rcx,  (X86_REG_CX  * 8)(%rdi)

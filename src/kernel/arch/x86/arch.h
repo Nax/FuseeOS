@@ -20,4 +20,10 @@ void pic_enable(int i);
 void pic_disable(int i);
 void idt_set_gate_interrupt(int interrupt, int dpl, void* handler);
 
+struct Process;
+_EXTERNC void proc_run(Process*);
+_EXTERNC void proc_run_sysret(Process*);
+
+void x86_sys_init();
+
 #endif

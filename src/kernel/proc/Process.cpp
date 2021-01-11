@@ -52,5 +52,5 @@ void exec_proc(Process& proc)
 {
     gKernel.threads[0].proc = &proc;
     timer_ns(100000);
-    _exec_proc(&proc);
+    proc.run(&proc);
 }

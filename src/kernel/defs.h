@@ -1,0 +1,7 @@
+#ifndef KERNEL_DEFS_H
+#define KERNEL_DEFS_H 1
+
+#define KERNEL_MAX_SYSCALL  32
+#define KERNEL_STACK_SIZE   16384
+
+#endif

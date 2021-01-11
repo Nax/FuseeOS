@@ -14,4 +14,6 @@ void arch_init(void)
     init_mem();
 
     idt_set_gate_interrupt(X86_INT_TIMER, 0, (void*)&int_timer);
+
+    x86_sys_init();
 }

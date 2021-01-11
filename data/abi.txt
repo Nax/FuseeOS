@@ -1,0 +1,12 @@
+# Syscall ABI
+
+Input:
+  RAX: Syscall number
+  Args: RDI RSI RDX R10 R8 R9
+
+Return:
+  RAX: Result
+
+Clobber:
+  RCX
+  R11

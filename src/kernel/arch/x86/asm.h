@@ -78,4 +78,15 @@ inline static uint64_t getflags()
     return tmp;
 }
 
+struct KernelThread;
+
+inline static KernelThread& get_kthread()
+{
+    KernelThread* tmp;
+
+    ASM("mov %gs(0), %0\r\n" : "=r"(tmp));
+
+    return *tmp;
+}
+
 #endif
