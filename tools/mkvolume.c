@@ -218,7 +218,7 @@ static void make_volume(MfsVolume* volume, int size)
     struct timespec  spec;
 
     /* Get current time */
-    clock_gettime(CLOCK_REALTIME, &spec);
+    timespec_get(&spec, TIME_UTC);
     volume->now = spec.tv_sec * 1000 + spec.tv_nsec / 1000000;
 
     /* Adjust the size so it's a multiple of the page size */
@@ -301,7 +301,7 @@ static uint64_t copy_file(MfsVolume* volume, const char* path, const char* src)
 static void parse_append_str(char* buf, FILE* f)
 {
     int c;
-    int cursor;
+    int cursor = 0;
 
     /* Skip leading whitespace */
     for (;;)
@@ -311,7 +311,6 @@ static void parse_append_str(char* buf, FILE* f)
             break;
     }
 
-    cursor        = strlen(buf);
     buf[cursor++] = c;
 
     for (;;)
@@ -325,21 +324,17 @@ static void parse_append_str(char* buf, FILE* f)
     buf[cursor] = 0;
 }
 
-static void apply_buildspec_file(MfsVolume* volume, FILE* f, const char* tree)
+static void apply_buildspec_file(MfsVolume* volume, FILE* f)
 {
     char dst[1024];
     char src[1024];
-
-    dst[0] = 0;
-    strcpy(src, tree);
-    strcat(src, "/");
 
     parse_append_str(dst, f);
     parse_append_str(src, f);
     copy_file(volume, dst, src);
 }
 
-static void apply_buildspec(MfsVolume* volume, const char* path, const char* tree)
+static void apply_buildspec(MfsVolume* volume, const char* path)
 {
     FILE* f;
     int   c;
@@ -359,7 +354,7 @@ static void apply_buildspec(MfsVolume* volume, const char* path, const char* tre
             }
             break;
         case 'F':
-            apply_buildspec_file(volume, f, tree);
+            apply_buildspec_file(volume, f);
             break;
         default:
             break;
@@ -376,7 +371,7 @@ int main(int argc, char** argv)
     memset(&volume, 0, sizeof(volume));
     make_volume(&volume, atoi(argv[2]));
     make_vbr(&volume, argv[3]);
-    apply_buildspec(&volume, argv[4], argv[5]);
+    apply_buildspec(&volume, argv[4]);
     f = fopen(argv[1], "wb");
     fwrite(volume.data, volume.size, 1, f);
     fclose(f);

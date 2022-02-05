@@ -4,3 +4,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
 add_executable(init init.c)
 target_link_libraries(init libc)
+install_image(TARGET init DESTINATION /sbin INITRAM)

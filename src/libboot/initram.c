@@ -20,3 +20,4 @@ char* initram_lookup(const char* name)
 
     return NULL;
 }
+

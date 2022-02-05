@@ -106,3 +106,4 @@ void gdt_init()
 
     enable_gdt(&gGdtDescriptor, 0x8, 0x10);
 }
+

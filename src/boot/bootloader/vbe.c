@@ -105,9 +105,9 @@ void vbe_init(void)
     if (vbe_monitor_info(&mon_width, &mon_height))
     {
         /* Call failed, EDID not available */
-        /* Assume the now extremely common 1920x1080 */
-        mon_width  = 1920;
-        mon_height = 1080;
+        /* Assume 800x600 */
+        mon_width  = 800;
+        mon_height = 600;
     }
     vbe_try_modes(mon_width, mon_height);
 }

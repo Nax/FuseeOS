@@ -1,3 +1,0 @@
-F boot/kernel   boot/kernel
-F boot/initram  boot/initram
-F sbin/init     sbin/init

@@ -79,47 +79,66 @@ static void add_file(InitRamDisk* rd, const char* name, const char* path)
     rd->header.fh_size += sizeof(InitRamFileEntry);
 }
 
-static void add_file_tree(InitRamDisk* rd, const char* name, const char* tree)
+static void parse_initram_str(char* buf, FILE* f)
 {
-    char buffer[BUFFERSIZE];
+    int c;
+    int cursor = 0;
 
-    strcpy(buffer, tree);
-    strcat(buffer, "/");
-    strcat(buffer, name);
-    add_file(rd, name, buffer);
-}
-
-static void parse_initram_src(InitRamDisk* rd, const char* path, const char* tree)
-{
-    int    c;
-    FILE*  f;
-    char   name[BUFFERSIZE];
-    size_t namelen;
-
-    f = fopen(path, "rb");
+    /* Skip leading whitespace */
     for (;;)
     {
-        /* Skip WS */
-        for (;;)
-        {
-            c = fgetc(f);
-            if (!isspace(c))
-                break;
-        }
+        c = fgetc(f);
+        if (!isspace(c))
+            break;
+    }
+
+    buf[cursor++] = c;
+
+    for (;;)
+    {
+        c = fgetc(f);
+        if (isspace(c))
+            break;
+        buf[cursor++] = c;
+    }
+
+    buf[cursor] = 0;
+}
+
+static void parse_initram_file(InitRamDisk* rd, FILE* f)
+{
+    char dst[1024];
+    char src[1024];
+
+    parse_initram_str(dst, f);
+    parse_initram_str(src, f);
+    add_file(rd, dst, src);
+}
+
+static void parse_initram_src(InitRamDisk* rd, const char* path)
+{
+    FILE* f;
+    int   c;
+
+    f = fopen(path, "r");
+    for (;;)
+    {
         if (feof(f))
             break;
-        name[0] = (char)c;
-        namelen = 1;
-        for (;;)
+        c = fgetc(f);
+        switch (c)
         {
-            c = fgetc(f);
-            if (isspace(c) || feof(f))
+        case '#':
+            while (c != '\n' && !feof(f))
             {
-                name[namelen] = 0;
-                add_file_tree(rd, name, tree);
-                break;
+                c = fgetc(f);
             }
-            name[namelen++] = c;
+            break;
+        case 'F':
+            parse_initram_file(rd, f);
+            break;
+        default:
+            break;
         }
     }
     fclose(f);
@@ -130,7 +149,7 @@ int main(int argc, char** argv)
     InitRamDisk rd;
 
     init_initram(&rd);
-    parse_initram_src(&rd, argv[2], argv[3]);
+    parse_initram_src(&rd, argv[2]);
     save_initram(&rd, argv[1]);
     return 0;
 }
