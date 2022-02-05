@@ -9,6 +9,8 @@
 
 #define BUFFERSIZE 4096
 
+#include "spec_parser.h"
+
 typedef struct
 {
     uint64_t size;
@@ -91,7 +93,8 @@ static char* ptr_from_data_index(MfsVolume* volume, MfsPageFile* file, uint64_t 
     }
     else
     {
-        /* ??? */
+        printf("Unsupported: file too large\n");
+        exit(1);
     }
     return inode_page(volume, inode)->data;
 }
@@ -264,6 +267,8 @@ static uint64_t copy_file(MfsVolume* volume, const char* path, const char* src)
     int      len;
     MfsFile  mfs_file;
 
+    if (path[0] == '/')
+        path++;
     len = strlen(path);
     memcpy(namebuf, path, len + 1);
     e         = namebuf;
@@ -298,82 +303,29 @@ static uint64_t copy_file(MfsVolume* volume, const char* path, const char* src)
     append_dir(volume, dir_inode, e, file_inode);
 }
 
-static void parse_append_str(char* buf, FILE* f)
-{
-    int c;
-    int cursor = 0;
-
-    /* Skip leading whitespace */
-    for (;;)
-    {
-        c = fgetc(f);
-        if (!isspace(c))
-            break;
-    }
-
-    buf[cursor++] = c;
-
-    for (;;)
-    {
-        c = fgetc(f);
-        if (isspace(c))
-            break;
-        buf[cursor++] = c;
-    }
-
-    buf[cursor] = 0;
-}
-
-static void apply_buildspec_file(MfsVolume* volume, FILE* f)
-{
-    char dst[1024];
-    char src[1024];
-
-    parse_append_str(dst, f);
-    parse_append_str(src, f);
-    copy_file(volume, dst, src);
-}
-
-static void apply_buildspec(MfsVolume* volume, const char* path)
-{
-    FILE* f;
-    int   c;
-
-    f = fopen(path, "r");
-    for (;;)
-    {
-        if (feof(f))
-            break;
-        c = fgetc(f);
-        switch (c)
-        {
-        case '#':
-            while (c != '\n' && !feof(f))
-            {
-                c = fgetc(f);
-            }
-            break;
-        case 'F':
-            apply_buildspec_file(volume, f);
-            break;
-        default:
-            break;
-        }
-    }
-    fclose(f);
-}
-
 int main(int argc, char** argv)
 {
-    FILE*     f;
+    FILE*     out;
     MfsVolume volume;
+
+    FILE*   specfile;
+    Spec    spec;
 
     memset(&volume, 0, sizeof(volume));
     make_volume(&volume, atoi(argv[2]));
     make_vbr(&volume, argv[3]);
-    apply_buildspec(&volume, argv[4]);
-    f = fopen(argv[1], "wb");
-    fwrite(volume.data, volume.size, 1, f);
-    fclose(f);
+
+    specfile = fopen(argv[4], "rb");
+    for (;;)
+    {
+        if (parse_spec(&spec, specfile))
+            break;
+        copy_file(&volume, spec.dst, spec.src);
+    }
+    fclose(specfile);
+
+    out = fopen(argv[1], "wb");
+    fwrite(volume.data, volume.size, 1, out);
+    fclose(out);
     return 0;
 }

@@ -5,6 +5,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "spec_parser.h"
+
 #define BUFFERSIZE 4096
 
 typedef struct
@@ -64,6 +66,11 @@ static void add_file(InitRamDisk* rd, const char* name, const char* path)
 
     /* Handle data */
     f = fopen(path, "rb");
+    if (!f)
+    {
+        printf("Could not open `%s'\n", path);
+        exit(1);
+    }
     fseek(f, 0, SEEK_END);
     file_size = ftell(f);
     fseek(f, 0, SEEK_SET);
@@ -79,77 +86,21 @@ static void add_file(InitRamDisk* rd, const char* name, const char* path)
     rd->header.fh_size += sizeof(InitRamFileEntry);
 }
 
-static void parse_initram_str(char* buf, FILE* f)
-{
-    int c;
-    int cursor = 0;
-
-    /* Skip leading whitespace */
-    for (;;)
-    {
-        c = fgetc(f);
-        if (!isspace(c))
-            break;
-    }
-
-    buf[cursor++] = c;
-
-    for (;;)
-    {
-        c = fgetc(f);
-        if (isspace(c))
-            break;
-        buf[cursor++] = c;
-    }
-
-    buf[cursor] = 0;
-}
-
-static void parse_initram_file(InitRamDisk* rd, FILE* f)
-{
-    char dst[1024];
-    char src[1024];
-
-    parse_initram_str(dst, f);
-    parse_initram_str(src, f);
-    add_file(rd, dst, src);
-}
-
-static void parse_initram_src(InitRamDisk* rd, const char* path)
-{
-    FILE* f;
-    int   c;
-
-    f = fopen(path, "r");
-    for (;;)
-    {
-        if (feof(f))
-            break;
-        c = fgetc(f);
-        switch (c)
-        {
-        case '#':
-            while (c != '\n' && !feof(f))
-            {
-                c = fgetc(f);
-            }
-            break;
-        case 'F':
-            parse_initram_file(rd, f);
-            break;
-        default:
-            break;
-        }
-    }
-    fclose(f);
-}
-
 int main(int argc, char** argv)
 {
     InitRamDisk rd;
+    FILE* f;
+    Spec spec;
 
     init_initram(&rd);
-    parse_initram_src(&rd, argv[2]);
+    f = fopen(argv[2], "rb");
+    for (;;)
+    {
+        if (parse_spec(&spec, f))
+            break;
+        add_file(&rd, spec.dst, spec.src);
+    }
+    fclose(f);
     save_initram(&rd, argv[1]);
     return 0;
 }
