@@ -80,5 +80,5 @@ x86_sys_handler:
     jmp     proc_run_sysret
 
 bad_sys:
-    mov $(-_ENOSYS), %rax
+    mov $(-ENOSYS), %rax
     sysretq
