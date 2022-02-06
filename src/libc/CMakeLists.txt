@@ -10,12 +10,16 @@ list(REMOVE_ITEM SOURCES "${CRT0_SRC}")
 add_library(libc STATIC "${SOURCES}")
 set_target_properties(libc PROPERTIES OUTPUT_NAME "c")
 
+if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set(TARGET_FLAG "--target=x86_64-elf")
+endif()
+
 add_custom_command(
-    OUTPUT "${CRT0}"
-    COMMAND ${CMAKE_C_COMPILER} -c "${CMAKE_CURRENT_SOURCE_DIR}/crt0.S" -o "${CRT0}"
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/crt0.S"
-    COMMENT "Building crt0.o"
-    VERBATIM
+  OUTPUT "${CRT0}"
+  COMMAND ${CMAKE_C_COMPILER} ${TARGET_FLAG} -c "${CMAKE_CURRENT_SOURCE_DIR}/crt0.S" -o "${CRT0}"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/crt0.S"
+  COMMENT "Building crt0.o"
+  VERBATIM
 )
 add_custom_target(libc_crt0 DEPENDS "${CRT0}")
 add_dependencies(libc libc_crt0)

@@ -27,7 +27,7 @@ bootstrap:
     rep movsb
 
     /* Jump to the relocated code */
-    jmp $0x00, $start
+    jmp $0x00,$start
 
 start:
     /* Load the stack */

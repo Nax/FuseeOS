@@ -13,12 +13,14 @@ class Array
 public:
     Array() : _data{}, _size{}, _capacity{} {}
 
+    /*
     ~Array()
     {
         for (std::size_t i = 0; i < _size; ++i)
             (_data + i)->~T();
         kfree(_data);
     }
+    */
 
     bool        empty() const { return _size == 0; }
     std::size_t size() const { return _size; }

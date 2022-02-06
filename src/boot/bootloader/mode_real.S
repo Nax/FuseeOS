@@ -46,7 +46,7 @@ switch_mode_real:
     /* Enter 16 bit protected mode */
     pushq $0x08
     pushq $pmode16
-    retfq
+    lretq
 
 .code16
 pmode16:

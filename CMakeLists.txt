@@ -9,11 +9,21 @@ else()
   project(FuseeOS-Superbuild NONE)
   include(ExternalProject)
 
+  option(USE_CLANG "Build using a clang/llvm toolchain" OFF)
+
+  if (USE_CLANG)
+    set(TOOLCHAIN "CrossLLVMToolchain")
+    set(TOOLCHAIN_NAME "llvm")
+  else()
+    set(TOOLCHAIN "CrossGNUToolchain")
+    set(TOOLCHAIN_NAME "gnu")
+  endif()
+
   ExternalProject_Add(
     ep_fusee
     SOURCE_DIR  "${CMAKE_SOURCE_DIR}"
     INSTALL_DIR "${CMAKE_BINARY_DIR}"
-    BINARY_DIR  "${CMAKE_BINARY_DIR}/ep/src"
+    BINARY_DIR  "${CMAKE_BINARY_DIR}/ep/src-${TOOLCHAIN_NAME}"
     CMAKE_ARGS
       -DSUPERBUILD_SRC=ON
       -DCMAKE_EXPORT_COMPILE_COMMANDS=${CMAKE_EXPORT_COMPILE_COMMANDS}
@@ -21,7 +31,7 @@ else()
       -DCMAKE_BUILD_TYPE=$<CONFIG>
       "-DTOOLS=${CMAKE_BINARY_DIR}/tools"
       "-DEXE=${CMAKE_EXECUTABLE_SUFFIX}"
-      "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/cmake/CrossGNUToolchain.cmake"
+      "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/cmake/${TOOLCHAIN}.cmake"
   )
   ExternalProject_Add_Step(ep_fusee reconfigure
     DEPENDEES download
