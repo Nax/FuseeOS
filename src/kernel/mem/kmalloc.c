@@ -45,8 +45,10 @@ static void shrink(void)
     gKernel.heap_size = newSize;
 }
 
-void* kmalloc(size_t size)
+void* kmalloc(size_t size, int flags)
 {
+    _UNUSED(flags);
+
     HeapBlock* blk;
     HeapBlock* best;
     void*  end;

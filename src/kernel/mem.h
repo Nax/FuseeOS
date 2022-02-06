@@ -80,10 +80,10 @@ _EXTERNC void  kmunmap(void* ptr, size_t size);
 _EXTERNC void  kmunmap_tree(void* ptr, size_t size);
 _EXTERNC void  kmprotect_kernel(void);
 
-_EXTERNC void* kmalloc(size_t size);
-_EXTERNC void  kfree(void* addr);
-
 _EXTERNC void* io_alloc(size_t size);
 _EXTERNC void  io_free(void* addr);
+
+_EXTERNC void* kmalloc(size_t size, int flags);
+_EXTERNC void  kfree(void* addr);
 
 #endif

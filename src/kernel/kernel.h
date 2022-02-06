@@ -8,7 +8,7 @@
 #include <kernel/mem.h>
 #include <kernel/print.h>
 #include <kernel/sections.h>
-#include <kernel/proc/Process.h>
+#include <kernel/proc.h>
 #include <string.h>
 #include <strings.h>
 

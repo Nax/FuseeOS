@@ -9,6 +9,8 @@
 #define _LIKELY(x)   (__builtin_expect((x), 1))
 #define _UNLIKELY(x) (__builtin_expect((x), 0))
 
+#define _UNREACHABLE()  (__builtin_unreachable())
+
 #define _UNUSED(x) ((void)x)
 
 #if defined(__cplusplus)
