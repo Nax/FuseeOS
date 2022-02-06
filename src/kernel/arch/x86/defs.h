@@ -119,7 +119,6 @@
 #define X86_IO_TIMER_DATA2  0x0042
 #define X86_IO_TIMER_CMD    0x0043
 
-
 /* PIC */
 #define X86_PIC_TIMER    0x00
 #define X86_PIC_KEYBOARD 0x01

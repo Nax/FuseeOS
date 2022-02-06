@@ -1,8 +1,9 @@
 #include <kernel/kernel.h>
+#include <kernel/arch/x86/pic.h>
 
-void timer_ns(std::uint64_t ns)
+void timer_ns(uint64_t ns)
 {
-    std::uint16_t divider;
+    uint16_t divider;
 
     divider = ns * 1000000000 / 1193182;
     out8(X86_IO_TIMER_CMD, 0x34);

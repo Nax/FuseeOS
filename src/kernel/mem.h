@@ -1,6 +1,7 @@
 #ifndef KERNEL_MEM_H
 #define KERNEL_MEM_H
 
+#include <sys/_cext.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -60,29 +61,29 @@ typedef struct
     VirtualMemoryBlock* free_list;
 } VirtualMemoryAllocator;
 
-void init_mem(void);
-void init_physical_mapping(void);
-void init_physical_memory(void);
-void init_virtual_memory(void);
+_EXTERNC void init_mem(void);
+_EXTERNC void init_physical_mapping(void);
+_EXTERNC void init_physical_memory(void);
+_EXTERNC void init_virtual_memory(void);
 
 uint64_t alloc_phys_pages(int npages);
 uint64_t alloc_phys(uint64_t size);
 uint64_t alloc_phys_early(int npages);
 
 void free_phys_pages(uint64_t page, size_t npages);
-void free_phys(uint64_t page, size_t size);
+_EXTERNC void free_phys(uint64_t page, size_t size);
 
 void* alloc_virtual(uint64_t size);
 
 void* physical_to_virtual(uint64_t physical);
 
-void  kmprotect(void* ptr, size_t size, int prot);
-void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags);
-void  kmunmap(void* ptr, size_t size);
-void  kmunmap_tree(void* ptr, size_t size);
-void  kmprotect_kernel(void);
+_EXTERNC void  kmprotect(void* ptr, size_t size, int prot);
+_EXTERNC void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags);
+_EXTERNC void  kmunmap(void* ptr, size_t size);
+_EXTERNC void  kmunmap_tree(void* ptr, size_t size);
+_EXTERNC void  kmprotect_kernel(void);
 
-void*   kmalloc(size_t size);
-void    kfree(void* addr);
+_EXTERNC void* kmalloc(size_t size);
+_EXTERNC void  kfree(void* addr);
 
 #endif

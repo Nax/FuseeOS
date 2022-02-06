@@ -1,25 +1,29 @@
 #ifndef KERNEL_PROC_PROCESS_H
 #define KERNEL_PROC_PROCESS_H 1
 
-#include <cstdint>
+#include <stdint.h>
 #include <kernel/arch.h>
 #include <kernel/collections/Array.h>
 
+typedef struct ProcessAddrSpaceRange ProcessAddrSpaceRange;
+typedef struct ProcessAddrSpace ProcessAddrSpace;
+typedef struct Process Process;
+
+#ifdef __cplusplus
+
 struct ProcessAddrSpaceRange
 {
-    std::uint64_t   base;
-    std::uint64_t   size;
+    uint64_t   base;
+    uint64_t   size;
 };
 
 struct ProcessAddrSpace
 {
-    std::uint64_t                   cr3;
+    uint64_t                        cr3;
     Array<ProcessAddrSpaceRange>    ranges;
 };
 
-struct Process;
-
-using ProcessRunFunc = void (*)(Process*);
+typedef void (*ProcessRunFunc)(Process*);
 
 struct Process
 {
@@ -30,6 +34,7 @@ struct Process
     ProcessRunFunc      run;
     ProcessAddrSpace    addr_space;
 };
+#endif
 
 _EXTERNC Process*    proc_create(void);
 _EXTERNC Process*    proc_create_initram(const char* path);

@@ -1,5 +1,5 @@
-#include <kernel/arch.h>
 #include <kernel/kernel.h>
+#include <kernel/arch.h>
 
 static void init_nx(void)
 {

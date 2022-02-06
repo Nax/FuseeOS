@@ -1,7 +1,8 @@
-#include <kernel/kernel.h>
-#include <stdint.h>
+#include <kernel/arch/x86/asm.h>
+#include <kernel/arch/x86/defs.h>
+#include <kernel/arch/x86/interrupts.h>
 
-struct _PACKED IDTDesc
+typedef struct _PACKED
 {
     uint16_t    offset_lo;
     uint16_t    selector;
@@ -13,17 +14,17 @@ struct _PACKED IDTDesc
     uint16_t    offset_md;
     uint32_t    offset_hi;
     uint32_t    zero;
-};
+} IDTDesc;
 
 static IDTDesc gIDT[256];
 
-struct _PACKED IDTDescPtr
+typedef struct _PACKED
 {
     uint16_t    size;
     IDTDesc*    idt;
-};
+} IDTDescPtr;
 
-alignas(16) static IDTDescPtr gIDTDescPtr = { sizeof(gIDT) - 1, gIDT };
+_ALIGN(16) static IDTDescPtr gIDTDescPtr = { sizeof(gIDT) - 1, gIDT };
 
 static void idt_reload()
 {

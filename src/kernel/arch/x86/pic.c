@@ -1,5 +1,4 @@
 #include <kernel/arch/x86/asm.h>
-#include <kernel/arch/x86/arch.h>
 #include <kernel/arch/x86/defs.h>
 
 #define ICW1_ICW4	        0x01

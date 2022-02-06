@@ -1,6 +1,7 @@
 #ifndef IO_ALLOC_H
 #define IO_ALLOC_H
 
+#ifdef __cplusplus
 #include <cstddef>
 #include <cstdint>
 
@@ -13,5 +14,10 @@ public:
 private:
     std::size_t _size;
 };
-
+#else
+typedef struct IOAlloc
+{
+    size_t size;
+} IOAlloc;
+#endif
 #endif

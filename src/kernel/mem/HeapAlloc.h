@@ -1,8 +1,11 @@
 #ifndef HEAP_ALLOC_H
 #define HEAP_ALLOC_H
 
+#ifdef __cplusplus
+
 #include <cstddef>
 #include <cstdint>
+
 
 class HeapAlloc
 {
@@ -22,5 +25,10 @@ private:
 
     std::size_t _size;
 };
-
+#else
+typedef struct HeapAlloc
+{
+    size_t size;
+} HeapAlloc;
+#endif
 #endif

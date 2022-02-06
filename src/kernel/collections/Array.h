@@ -1,11 +1,12 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
+#ifdef __cplusplus
 #include <new>
 #include <cstddef>
 
-void* kmalloc(std::size_t);
-void  kfree(void*);
+extern "C" void* kmalloc(std::size_t);
+extern "C" void  kfree(void*);
 
 template <typename T>
 class Array
@@ -118,5 +119,7 @@ private:
     std::size_t     _size;
     std::size_t     _capacity;
 };
+
+#endif
 
 #endif
