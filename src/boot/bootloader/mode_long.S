@@ -66,7 +66,3 @@ lmode:
     mov %ax, %ss
 
     ret
-
-/* TODO: Remove this */
-.global jump_mode_long
-jump_mode_long:
