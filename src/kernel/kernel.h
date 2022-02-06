@@ -51,7 +51,6 @@ typedef struct Kernel
 {
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
-    HeapAlloc               heap;
     size_t                  heap_size;
     IOAlloc                 io;
     KernelThread*           threads;

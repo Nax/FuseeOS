@@ -45,14 +45,3 @@ void init_mem(void)
     /* Free all lomem paging info */
     kmunmap_tree(nullptr, 0x100000000);
 }
-
-void* kmalloc(size_t size)
-{
-    return gKernel.heap.alloc(size);
-}
-
-void kfree(void* addr)
-{
-    if (addr)
-        gKernel.heap.free(addr);
-}
