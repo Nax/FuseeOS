@@ -18,6 +18,13 @@ _start:
     or $(3 << 9), %rax
     mov %rax, %cr4
 
+    /*
+     * Push a dummy value to make the stack
+     * aligned to 16 bytes on entry.
+     * This is required by the ABI.
+     */
+    pushq 0
+
     /* Enter kmain */
     jmp kmain
 

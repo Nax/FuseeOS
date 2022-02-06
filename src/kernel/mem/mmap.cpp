@@ -1,5 +1,10 @@
 #include <kernel/kernel.h>
 
+static uint64_t get_order_size(int order)
+{
+    return ((uint64_t)PAGESIZE << (9 * order));
+}
+
 static uint64_t sext48(uint64_t v)
 {
     uint64_t mask;
@@ -43,6 +48,41 @@ static uint64_t alloc_zero_page(void)
     return page;
 }
 
+static void get_paging_iter_info(int* first, int* last, int order, uint64_t dir_base, uint64_t virt_start, uint64_t npages)
+{
+    uint64_t virt_end;
+    uint64_t order_size;
+    uint64_t dir_end;
+
+    virt_end   = virt_start + npages * PAGESIZE - 1;
+    order_size = get_order_size(order);
+    dir_end = dir_base + 512 * order_size - 1;
+
+    *first = (dir_base >= virt_start) ? 0 : ((((virt_start - dir_base) / PAGESIZE) >> (9 * order)) & 0x1ff);
+    *last = 512 - ((virt_end >= dir_end) ? 0 : (((dir_end - virt_end) / PAGESIZE) >> (9 * order)) & 0x1ff);
+}
+
+static void alter_pages_map_anon(int order, uint64_t* dir, uint64_t dir_base, uint64_t virt_start, uint64_t phys_start, uint64_t npages, uint64_t flags)
+{
+    uint64_t mapping;
+    uint64_t tmp;
+    uint64_t order_size;
+
+    int first;
+    int last;
+
+    order_size = get_order_size(order);
+    get_paging_iter_info(&first, &last, order, dir_base, virt_start, npages);
+
+    for (int i = first; i < last; ++i)
+    {
+        mapping = sext48(dir_base + i * order_size);
+        tmp = dir[i];
+
+
+    }
+}
+
 template <AlterMode mode, int order> struct PageAlterator
 {
     static void
@@ -50,17 +90,13 @@ template <AlterMode mode, int order> struct PageAlterator
     {
         uint64_t mapping;
         uint64_t tmp;
-        uint64_t virt_end;
-        uint64_t dir_end;
         uint64_t order_size;
+
         int      first;
         int      last;
 
-        virt_end   = virt_start + npages * PAGESIZE - 1;
-        order_size = ((uint64_t)PAGESIZE << (9 * order));
-        dir_end    = dir_base + 512 * order_size - 1;
-        first      = (dir_base >= virt_start) ? 0 : ((((virt_start - dir_base) / PAGESIZE) >> (9 * order)) & 0x1ff);
-        last       = 512 - ((virt_end >= dir_end) ? 0 : (((dir_end - virt_end) / PAGESIZE) >> (9 * order)) & 0x1ff);
+        order_size = get_order_size(order);
+        get_paging_iter_info(&first, &last, order, dir_base, virt_start, npages);
 
         for (int i = first; i < last; ++i)
         {
@@ -139,31 +175,6 @@ template <AlterMode mode> void alter_pages(void* ptr, uint64_t phys, size_t size
                                 (size + PAGESIZE - 1) / PAGESIZE,
                                 flags);
     ASM ("mov %0, %%cr3\r\n" :: "a"(cr3));
-}
-
-/*
- * x86_64 paging levels:
- *  - PML4
- *  - PDP
- *  - PD
- *  - PT
- */
-
-void init_physical_mapping(void)
-{
-    uint64_t  pdp;
-    uint64_t* vpdp;
-
-    gKernel.cr3 = (uint64_t*)gBootParams.cr3;
-    pdp         = alloc_phys_early(1);
-    vpdp        = (uint64_t*)pdp;
-
-    for (int i = 0; i < 512; ++i)
-    {
-        vpdp[i] = (i * 0x40000000LL) | 0x83;
-    }
-    gKernel.cr3[PML4_PHYSICAL] = pdp | 0x03;
-    __asm__ __volatile__("mov %0, %%cr3\r\n" ::"a"(gKernel.cr3));
 }
 
 void* physical_to_virtual(uint64_t physical) { return (void*)(0xffff800000000000 | physical); }

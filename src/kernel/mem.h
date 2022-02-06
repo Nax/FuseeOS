@@ -59,7 +59,6 @@ typedef struct
 } VirtualMemoryAllocator;
 
 _EXTERNC void init_mem(void);
-_EXTERNC void init_physical_mapping(void);
 _EXTERNC void init_physical_memory(void);
 _EXTERNC void init_virtual_memory(void);
 
@@ -85,5 +84,12 @@ _EXTERNC void  io_free(void* addr);
 
 _EXTERNC void* kmalloc(size_t size, int flags);
 _EXTERNC void  kfree(void* addr);
+
+_EXTERNC void arch_init_physical_mapping(void);
+
+/**
+ * Called on every page fault. Return 0 on success, 1 on error.
+ */
+_EXTERNC int page_fault_handler();
 
 #endif

@@ -89,4 +89,16 @@ inline static KernelThread* get_kthread()
     return tmp;
 }
 
+inline static uint64_t cr3_read(void)
+{
+    uint64_t cr3;
+    ASM("mov %%cr3, %1\r\n" : "=a"(cr3) :: "memory");
+    return cr3;
+}
+
+inline static void cr3_write(uint64_t cr3)
+{
+    ASM("mov %1, %%cr3\r\n" :: "a"(cr3) : "memory");
+}
+
 #endif
