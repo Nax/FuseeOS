@@ -52,7 +52,7 @@ typedef struct Kernel
     PhysicalMemoryAllocator pmem;
     VirtualMemoryAllocator  vmem;
     size_t                  heap_size;
-    IOAlloc                 io;
+    size_t                  io_size;
     KernelThread*           threads;
     uint64_t                nx_mask;
     uint64_t*               cr3;

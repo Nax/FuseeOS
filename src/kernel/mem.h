@@ -30,8 +30,6 @@
 inline static size_t page_count(size_t size) { return (size + PAGESIZE - 1) / PAGESIZE; }
 inline static size_t page_round(size_t size) { return page_count(size) * PAGESIZE; }
 
-#include <kernel/mem/IOAlloc.h>
-
 typedef struct
 {
     uint64_t base;
@@ -65,16 +63,16 @@ _EXTERNC void init_physical_mapping(void);
 _EXTERNC void init_physical_memory(void);
 _EXTERNC void init_virtual_memory(void);
 
-uint64_t alloc_phys_pages(int npages);
-uint64_t alloc_phys(uint64_t size);
-uint64_t alloc_phys_early(int npages);
+_EXTERNC uint64_t alloc_phys_pages(int npages);
+_EXTERNC uint64_t alloc_phys(uint64_t size);
+_EXTERNC uint64_t alloc_phys_early(int npages);
 
-void free_phys_pages(uint64_t page, size_t npages);
+_EXTERNC void free_phys_pages(uint64_t page, size_t npages);
 _EXTERNC void free_phys(uint64_t page, size_t size);
 
-void* alloc_virtual(uint64_t size);
+_EXTERNC void* alloc_virtual(uint64_t size);
 
-void* physical_to_virtual(uint64_t physical);
+_EXTERNC void* physical_to_virtual(uint64_t physical);
 
 _EXTERNC void  kmprotect(void* ptr, size_t size, int prot);
 _EXTERNC void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags);
@@ -84,5 +82,8 @@ _EXTERNC void  kmprotect_kernel(void);
 
 _EXTERNC void* kmalloc(size_t size);
 _EXTERNC void  kfree(void* addr);
+
+_EXTERNC void* io_alloc(size_t size);
+_EXTERNC void  io_free(void* addr);
 
 #endif

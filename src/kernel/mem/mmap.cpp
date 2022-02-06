@@ -176,7 +176,7 @@ void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags)
 {
     size = page_round(size);
 
-    if (!ptr && ((flags & KMAP_FIXED) == 0)) { ptr = gKernel.io.alloc(size); }
+    if (!ptr && ((flags & KMAP_FIXED) == 0)) { ptr = io_alloc(size); }
 
     if (flags & KMAP_ANONYMOUS)
     {
