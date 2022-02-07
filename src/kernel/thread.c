@@ -2,7 +2,7 @@
 
 void thread_init()
 {
-    gKernel.threads = (KernelThread*)kmalloc(sizeof(KernelThread));
+    gKernel.threads = (KernelThread*)kmalloc(sizeof(KernelThread), 0);
     memset(gKernel.threads, 0, sizeof(KernelThread));
     gKernel.threads[0].self = &gKernel.threads[0];
     gKernel.threads[0].arch.tss.rsp[0] = (uint64_t)gKernel.threads[0].stack + sizeof(gKernel.threads[0].stack);

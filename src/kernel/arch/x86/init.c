@@ -1,7 +1,10 @@
-#include <kernel/kernel.h>
-
-void idt_init();
-void gdt_init();
+#include <kernel/arch/x86/defs.h>
+#include <kernel/arch/x86/gdt.h>
+#include <kernel/arch/x86/pic.h>
+#include <kernel/arch/x86/interrupts.h>
+#include <kernel/arch/x86/syscall.h>
+#include <kernel/mem.h>
+#include <kernel/print.h>
 
 void arch_init(void)
 {
@@ -15,5 +18,5 @@ void arch_init(void)
 
     idt_set_gate_interrupt(X86_INT_TIMER, 0, (void*)&int_timer);
 
-    x86_sys_init();
+    sys_init();
 }

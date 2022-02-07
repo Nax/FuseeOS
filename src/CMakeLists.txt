@@ -4,6 +4,9 @@ include_directories(
   "${CMAKE_SOURCE_DIR}/src"
 )
 
+# Conf
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+
 # Initram/Image
 set(INITRAM_CSV "${CMAKE_BINARY_DIR}/initram.csv")
 set(IMAGE_CSV   "${CMAKE_BINARY_DIR}/image.csv")

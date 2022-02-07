@@ -1,8 +1,8 @@
 .section .text
 .global int_timer
 
-.extern proc_schedule
-.extern proc_run_next
+.extern proc_reschedule
+.extern kern_schedule
 
 #include <kernel/interrupts/common.S>
 
@@ -15,7 +15,7 @@ int_timer:
     out  %al, $0x20
 
     /* Re-schedule the process */
-    call proc_schedule
+    call proc_reschedule
 
     /* Go back to the scheduler */
-    jmp proc_run_next
+    jmp kern_schedule

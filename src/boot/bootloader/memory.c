@@ -19,9 +19,11 @@ void memory_detect(void)
         args.edi = (uintptr_t)&mem;
         args.es  = 0;
 
-        if (bios_call(0x15, &args)) break;
+        if (bios_call(0x15, &args))
+            break;
 
-        if (args.eax != 0x534d4150) break;
+        if (args.eax != 0x534d4150)
+            break;
 
         if (mem.size != 0 && mem.type == 1)
         {
@@ -29,37 +31,60 @@ void memory_detect(void)
             gBootParams.mem_map[map_curs].size = mem.size;
             map_curs++;
 
-            if (mem.base >= 0x100000)
+            /* Low 16 MiB is lomem, a temp place */
+            if (mem.base + mem.size > 0x1000000)
             {
+                if (mem.base < 0x1000000)
+                {
+                    mem.size -= (0x1000000 - mem.base);
+                    mem.base = 0x1000000;
+                }
                 gBootParams.mem_free[free_curs].base = mem.base;
                 gBootParams.mem_free[free_curs].size = mem.size;
                 free_curs++;
             }
         }
 
-        if (args.ebx == 0) break;
+        if (args.ebx == 0)
+            break;
     }
 }
 
-void* memory_alloc(uint32_t size)
+static void map_identity_2mib(int i, int j)
 {
-    uint64_t npages;
-    uint64_t base;
+    uint64_t* tmp;
+    uint64_t  tmp2;
 
-    npages = (size + PAGESIZE - 1) / PAGESIZE;
-    size   = npages * PAGESIZE;
-
-    base = 0;
-    for (int i = 0; i < 32; ++i)
+    tmp  = (uint64_t*)gBootParams.cr3;
+    tmp2 = tmp[0];
+    if (!tmp2)
     {
-        if (gBootParams.mem_free[i].size >= size)
-        {
-            base = gBootParams.mem_free[i].base;
-            gBootParams.mem_free[i].base += size;
-            gBootParams.mem_free[i].size -= size;
-            break;
-        }
+        tmp2   = (uint64_t)alloc_page_lo() | 3;
+        tmp[0] = tmp2;
     }
+    tmp  = (uint64_t*)(tmp2 & 0xfffffffffffff000);
+    tmp2 = tmp[i];
+    if (!tmp2)
+    {
+        tmp2   = (uint64_t)alloc_page_lo() | 3;
+        tmp[i] = tmp2;
+    }
+    tmp    = (uint64_t*)(tmp2 & 0xfffffffffffff000);
+    tmp[j] = (((((uint64_t)i * 0x200) + (uint64_t)j) * 0x200000) | 0x83);
+}
 
-    return (void*)base;
+void memory_identity_map(void)
+{
+    gBootParams.cr3 = (char*)alloc_page_hi();
+
+    for (uint64_t i = 0; i < 4; ++i)
+    {
+        for (uint64_t j = 0; j < 0x200; ++j)
+        {
+            map_identity_2mib(i, j);
+        }
+
+        /* We need to apply the paging as we go */
+        __asm__ __volatile__("mov %0, %%cr3\r\n" ::"a"(gBootParams.cr3));
+    }
 }

@@ -1,23 +1,28 @@
-#include <kernel/kernel.h>
-#include <kernel/arch/x86/TSS.h>
+#include <kernel/arch/x86/asm.h>
+#include <kernel/arch/x86/defs.h>
+#include <kernel/arch/x86/gdt.h>
+#include <kernel/arch/x86/tss.h>
+
+typedef struct GdtEntrySystem GdtEntrySystem;
+typedef struct GdtDescriptor GdtDescriptor;
 
 struct _PACKED GdtEntrySystem
 {
     uint16_t limit_lo;
     uint16_t base_lo;
     uint8_t  base_md;
-    uint8_t  ac : 1;
-    uint8_t  rw : 1;
-    uint8_t  dc : 1;
-    uint8_t  ex : 1;
-    uint8_t  system : 1;
-    uint8_t  priv : 2;
-    uint8_t  present : 1;
-    uint8_t  limit_hi : 4;
-    uint8_t  zero : 1;
-    uint8_t  l : 1;
-    uint8_t  sz : 1;
-    uint8_t  gr : 1;
+    uint8_t  ac:1;
+    uint8_t  rw:1;
+    uint8_t  dc:1;
+    uint8_t  ex:1;
+    uint8_t  system:1;
+    uint8_t  priv:2;
+    uint8_t  present:1;
+    uint8_t  limit_hi:4;
+    uint8_t  zero:1;
+    uint8_t  l:1;
+    uint8_t  sz:1;
+    uint8_t  gr:1;
     uint8_t  base_hi;
 };
 
@@ -106,4 +111,3 @@ void gdt_init()
 
     enable_gdt(&gGdtDescriptor, 0x8, 0x10);
 }
-

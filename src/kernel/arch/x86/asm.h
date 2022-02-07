@@ -78,15 +78,27 @@ inline static uint64_t getflags()
     return tmp;
 }
 
-struct KernelThread;
+typedef struct KernelThread KernelThread;
 
-inline static KernelThread& get_kthread()
+inline static KernelThread* get_kthread()
 {
     KernelThread* tmp;
 
     ASM("mov %%gs(0), %0\r\n" : "=r"(tmp));
 
-    return *tmp;
+    return tmp;
+}
+
+inline static uint64_t cr3_read(void)
+{
+    uint64_t cr3;
+    ASM("mov %%cr3, %0\r\n" : "=a"(cr3) :: "memory");
+    return cr3;
+}
+
+inline static void cr3_write(uint64_t cr3)
+{
+    ASM("mov %0, %%cr3\r\n" :: "a"(cr3) : "memory");
 }
 
 #endif

@@ -2,7 +2,7 @@
 
 _EXTERNC void x86_sys_handler();
 
-void x86_sys_init()
+void sys_init()
 {
     wrmsr(X86_MSR_SFMASK,   X86_FLAG_IF);
     wrmsr(X86_MSR_LSTAR,    (uint64_t)&x86_sys_handler);

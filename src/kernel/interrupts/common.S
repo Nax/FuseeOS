@@ -1,6 +1,7 @@
 #include <kernel/arch/x86/defs.h>
 
 .extern proc_run
+.extern proc_get
 
 .macro SAVE_CONTEXT
     /* Restore kernel GS */

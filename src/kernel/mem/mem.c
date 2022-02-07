@@ -1,5 +1,5 @@
-#include <kernel/arch.h>
 #include <kernel/kernel.h>
+#include <kernel/arch.h>
 
 static void init_nx(void)
 {
@@ -21,6 +21,12 @@ static void init_nx(void)
     }
 }
 
+static void unmap_lomem(void)
+{
+    for (int i = 0; i < 128; ++i)
+        gKernel.cr3[i] = 0;
+}
+
 void init_mem(void)
 {
     /* Initialize the memory subsystems */
@@ -30,29 +36,21 @@ void init_mem(void)
     init_nx();
 
     /* Remap the kernel */
-    kmprotect_kernel();
+    init_kernel_mem_prot();
 
     /* Copy the initram */
-    char* tmp = (char*)kmalloc(gBootParams.initram_size);
+    char* tmp = (char*)kmalloc(gBootParams.initram_size, 0);
     memcpy(tmp, gBootParams.initram, gBootParams.initram_size);
     free_phys((uint64_t)gBootParams.initram, gBootParams.initram_size);
     gBootParams.initram = tmp;
 
     /* Remap the video buffer */
-    gBootParams.video.framebuffer = kmmap(nullptr, (uint64_t)gBootParams.video.framebuffer, gBootParams.video.pitch * gBootParams.video.height, KPROT_READ | KPROT_WRITE, 0);
+    gBootParams.video.framebuffer = kmap(NULL, (uint64_t)gBootParams.video.framebuffer, gBootParams.video.pitch * gBootParams.video.height, KPROT_READ | KPROT_WRITE);
     kprintf("Video Buffer: 0x%lx\n", (uint64_t)gBootParams.video.framebuffer);
 
+    /* Free lomem */
+    unmap_lomem();
+
     /* Free all lomem paging info */
-    kmunmap_tree(nullptr, 0x100000000);
-}
-
-void* kmalloc(size_t size)
-{
-    return gKernel.heap.alloc(size);
-}
-
-void kfree(void* addr)
-{
-    if (addr)
-        gKernel.heap.free(addr);
+    // kmunmap_tree(NULL, 0x100000000);
 }

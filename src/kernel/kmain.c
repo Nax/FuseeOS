@@ -8,7 +8,7 @@ _EXTERNC _NORETURN void kmain(BootParams* params)
     memcpy(&gBootParams, params, sizeof(*params));
 
     kprintf("FuseeOS kernel loaded\n");
-    init_physical_mapping();
+    arch_init_physical_mapping();
     kprintf("Physical memory loaded\n");
 
     arch_init();
@@ -20,10 +20,15 @@ _EXTERNC _NORETURN void kmain(BootParams* params)
     thread_init();
     kprintf("Thread-local kernel structures initialized\n");
 
+    /*
     Process* p;
+    proc_init();
     p = proc_create_initram("/sbin/init");
     proc_schedule(p);
-    proc_run_next();
+    kern_schedule();
+    */
 
     for (;;) {}
+
+    _UNREACHABLE();
 }
