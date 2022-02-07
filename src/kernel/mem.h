@@ -73,11 +73,20 @@ _EXTERNC void* alloc_virtual(uint64_t size);
 
 _EXTERNC void* physical_to_virtual(uint64_t physical);
 
+/*
 _EXTERNC void  kmprotect(void* ptr, size_t size, int prot);
 _EXTERNC void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags);
 _EXTERNC void  kmunmap(void* ptr, size_t size);
 _EXTERNC void  kmunmap_tree(void* ptr, size_t size);
 _EXTERNC void  kmprotect_kernel(void);
+*/
+
+_EXTERNC void    kmprotect(void* addr, size_t size, int prot);
+_EXTERNC void*   kmapanon(void* addr, size_t size, int prot);
+_EXTERNC void*   kmap(void* addr, uint64_t phys, size_t size, int prot);
+_EXTERNC void    kunmapanon(void* addr, size_t size);
+
+_EXTERNC void  init_kernel_mem_prot(void);
 
 _EXTERNC void* io_alloc(size_t size);
 _EXTERNC void  io_free(void* addr);

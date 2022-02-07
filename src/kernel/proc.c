@@ -28,7 +28,9 @@ void proc_init(void)
 static void* proc_alloc(Process* proc, void* addr, uint64_t size, int prot)
 {
     ASM("mov %0, %%cr3\r\n" :: "rax"(proc->addr_space.cr3));
-    kmmap(addr, 0, size, KPROT_USER | prot, KMAP_FIXED | KMAP_ANONYMOUS);
+    BREAKPOINT;
+    kmapanon(addr, size, KPROT_USER | prot);
+    BREAKPOINT;
     return addr;
 }
 
@@ -116,8 +118,9 @@ Process* proc_create_initram(const char* path)
     {
         proc = proc_create();
         load_elf(proc, image);
+        return proc;
     }
-    return proc;
+    return NULL;
 }
 
 void proc_schedule(Process* proc)

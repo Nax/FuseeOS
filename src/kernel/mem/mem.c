@@ -30,7 +30,7 @@ void init_mem(void)
     init_nx();
 
     /* Remap the kernel */
-    kmprotect_kernel();
+    init_kernel_mem_prot();
 
     /* Copy the initram */
     char* tmp = (char*)kmalloc(gBootParams.initram_size, 0);
@@ -39,9 +39,9 @@ void init_mem(void)
     gBootParams.initram = tmp;
 
     /* Remap the video buffer */
-    gBootParams.video.framebuffer = kmmap(NULL, (uint64_t)gBootParams.video.framebuffer, gBootParams.video.pitch * gBootParams.video.height, KPROT_READ | KPROT_WRITE, 0);
+    gBootParams.video.framebuffer = kmap(NULL, (uint64_t)gBootParams.video.framebuffer, gBootParams.video.pitch * gBootParams.video.height, KPROT_READ | KPROT_WRITE);
     kprintf("Video Buffer: 0x%lx\n", (uint64_t)gBootParams.video.framebuffer);
 
     /* Free all lomem paging info */
-    kmunmap_tree(NULL, 0x100000000);
+    // kmunmap_tree(NULL, 0x100000000);
 }

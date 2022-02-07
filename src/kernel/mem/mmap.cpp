@@ -1,43 +1,99 @@
 #include <kernel/kernel.h>
 
-static uint64_t get_order_size(int order)
+typedef struct
 {
-    return ((uint64_t)PAGESIZE << (9 * order));
+    uint64_t*   dir[4];
+    int         offset[4];
+    int         len[4];
+    int         len_current[4];
+    int         index[3];
+    int         state;
+} PageIterator;
+
+static void page_iter_create(PageIterator* iter, uint64_t cr3, void* vaddr, size_t len)
+{
+    uint64_t vpage = ((uint64_t)vaddr >> 12);
+    uint64_t vlen = (((uint64_t)len + (1 << 12) - 1) >> 12);
+
+    /* Compute initial offsets */
+    /* We can pre-compute that because only the
+       first chunk of each size can be misaligned */
+    for (int i = 0; i < 4; ++i)
+    {
+        iter->offset[i] = (vpage >> (9 * i)) % 512;
+        iter->len[i] = ((vlen + (1 << (9 * i)) - 1) >> (9 * i));
+    }
+
+    iter->dir[3] = (uint64_t*)physical_to_virtual(cr3);
+    iter->state = 0;
 }
 
-static uint64_t sext48(uint64_t v)
+static uint64_t* iter_compute_dir(uint64_t* dir, int index, int offset)
 {
-    uint64_t mask;
-
-    mask = v & 0x0000800000000000;
-    mask |= (mask << 1);
-    mask |= (mask << 2);
-    mask |= (mask << 4);
-    mask |= (mask << 8);
-    mask |= (mask << 16);
-    return v | mask;
+    return (uint64_t*)physical_to_virtual(dir[offset + index] & MMASK_PHYS);
 }
 
-/*
- * Various paging actions are available:
- *
- * Touch        - Set flags on the whole hierarchy
- * Protect      - Set flags on pages only
- * Map          - Map contiguous physical pages
- * MapAnon      - Map new pages
- * Unmap        - Unmap pages
- * UnmapTree    - Unmap the page tree
- */
-
-enum class AlterMode
+static int iter_compute_len(int len, int offset)
 {
-    Touch     = 0,
-    Protect   = 1,
-    Map       = 2,
-    MapAnon   = 3,
-    Unmap     = 4,
-    UnmapTree = 5,
-};
+    len += offset;
+    if (len > 512)
+        len = 512;
+    return len - offset;
+}
+
+static int page_iter_next(PageIterator* iter, int* out_depth, uint64_t** out_dir, int* out_len)
+{
+    switch (iter->state)
+    {
+    case 0:
+        *out_depth = 3;
+        *out_dir = iter->dir[3] + iter->offset[3];
+        *out_len = iter->len[3];
+        iter->state = 1;
+        return 0;
+    case 1:
+        for (iter->index[3] = 0; iter->index[3] < iter->len[3]; iter->index[3]++)
+        {
+            iter->dir[2] = iter_compute_dir(iter->dir[3], iter->index[3], iter->offset[3]);
+            iter->len_current[2] = iter_compute_len(iter->len[2], iter->offset[2]);
+            *out_depth = 2;
+            *out_dir = iter->dir[2] + iter->offset[2];
+            *out_len = iter->len_current[2];
+            iter->state = 2;
+            return 0;
+    case 2:
+            for (iter->index[2] = 0; iter->index[2] < iter->len[2]; iter->index[2]++)
+            {
+                iter->dir[1] = iter_compute_dir(iter->dir[2], iter->index[2], iter->offset[2]);
+                iter->len_current[1] = iter_compute_len(iter->len[1], iter->offset[1]);
+                *out_depth = 1;
+                *out_dir = iter->dir[1] + iter->offset[1];
+                *out_len = iter->len_current[1];
+                iter->state = 3;
+                return 0;
+    case 3:
+                for (iter->index[1] = 0; iter->index[1] < iter->len[1]; iter->index[1]++)
+                {
+                    iter->dir[0] = iter_compute_dir(iter->dir[1], iter->index[1], iter->offset[1]);
+                    iter->len_current[0] = iter_compute_len(iter->len[0], iter->offset[0]);
+                    *out_depth = 0;
+                    *out_dir = iter->dir[0] + iter->offset[0];
+                    *out_len = iter->len_current[0];
+                    iter->state = 4;
+                    return 0;
+    case 4:
+                    iter->len[0] -= iter->len_current[0];
+                    iter->offset[0] = 0;
+                }
+                iter->len[1] -= iter->len_current[1];
+                iter->offset[1] = 0;
+            }
+            iter->len[2] -= iter->len_current[2];
+            iter->offset[2] = 0;
+        }
+    }
+    return 1;
+}
 
 static uint64_t alloc_zero_page(void)
 {
@@ -48,174 +104,181 @@ static uint64_t alloc_zero_page(void)
     return page;
 }
 
-static void get_paging_iter_info(int* first, int* last, int order, uint64_t dir_base, uint64_t virt_start, uint64_t npages)
+void* physical_to_virtual(uint64_t physical)
 {
-    uint64_t virt_end;
-    uint64_t order_size;
-    uint64_t dir_end;
-
-    virt_end   = virt_start + npages * PAGESIZE - 1;
-    order_size = get_order_size(order);
-    dir_end = dir_base + 512 * order_size - 1;
-
-    *first = (dir_base >= virt_start) ? 0 : ((((virt_start - dir_base) / PAGESIZE) >> (9 * order)) & 0x1ff);
-    *last = 512 - ((virt_end >= dir_end) ? 0 : (((dir_end - virt_end) / PAGESIZE) >> (9 * order)) & 0x1ff);
+    return (void*)(0xffff800000000000 | physical);
 }
 
-static void alter_pages_map_anon(int order, uint64_t* dir, uint64_t dir_base, uint64_t virt_start, uint64_t phys_start, uint64_t npages, uint64_t flags)
+static uint64_t page_prot_flags(int prot)
 {
-    uint64_t mapping;
+    uint64_t flags = 0;
+
+    if (prot & KPROT_WRITE)
+        flags |= X86_PAGE_WRITE;
+    if (prot & KPROT_USER)
+        flags |= X86_PAGE_USER;
+    if (!(prot & KPROT_EXECUTE))
+        flags |= gKernel.nx_mask;
+
+    return flags;
+}
+
+void kmprotect(void* addr, size_t size, int prot)
+{
+    PageIterator iter;
+    uint64_t* page_dir;
+    int page_depth;
+    int page_count;
+
+    uint64_t mask = ~((uint64_t)(X86_PAGE_USER | X86_PAGE_WRITE | gKernel.nx_mask));
+    uint64_t flags = page_prot_flags(prot);
     uint64_t tmp;
-    uint64_t order_size;
 
-    int first;
-    int last;
-
-    order_size = get_order_size(order);
-    get_paging_iter_info(&first, &last, order, dir_base, virt_start, npages);
-
-    for (int i = first; i < last; ++i)
+    page_iter_create(&iter, (uint64_t)gKernel.cr3, addr, size);
+    while (page_iter_next(&iter, &page_depth, &page_dir, &page_count) == 0)
     {
-        mapping = sext48(dir_base + i * order_size);
-        tmp = dir[i];
-
-
-    }
-}
-
-template <AlterMode mode, int order> struct PageAlterator
-{
-    static void
-    run(uint64_t* dir, uint64_t dir_base, uint64_t virt_start, uint64_t phys_start, uint64_t npages, uint64_t flags)
-    {
-        uint64_t mapping;
-        uint64_t tmp;
-        uint64_t order_size;
-
-        int      first;
-        int      last;
-
-        order_size = get_order_size(order);
-        get_paging_iter_info(&first, &last, order, dir_base, virt_start, npages);
-
-        for (int i = first; i < last; ++i)
+        if (page_depth == 0)
         {
-            mapping = sext48(dir_base + i * order_size);
-            tmp     = dir[i];
-            if ((order == 0 && mode == AlterMode::Protect) || mode == AlterMode::Touch)
+            for (int i = 0; i < page_count; ++i)
             {
-                tmp &= ~MMASK_PROTECT;
+                tmp = page_dir[i];
+                tmp &= mask;
                 tmp |= flags;
-                dir[i] = tmp;
-            }
-
-            if (order && (mode == AlterMode::Map || mode == AlterMode::MapAnon) && ((tmp & 1) == 0))
-            {
-                tmp    = alloc_zero_page() | 0x7;
-                dir[i] = tmp;
-            }
-
-            if (!order && (mode == AlterMode::MapAnon))
-            {
-                tmp    = alloc_phys_pages(1) | flags | 1;
-                dir[i] = tmp;
-            }
-
-            if (!order && (mode == AlterMode::Map))
-            {
-                tmp    = (phys_start + (mapping - virt_start)) | flags | 1;
-                dir[i] = tmp;
-            }
-
-            if (order && mode == AlterMode::UnmapTree)
-            {
-                if ((tmp & 1) == 0) continue;
-            }
-
-            if (order)
-            {
-                PageAlterator<mode, order - 1>::run(
-                    (uint64_t*)physical_to_virtual(tmp & MMASK_PHYS), mapping, virt_start, phys_start, npages, flags);
-            }
-
-            if ((!order && mode == AlterMode::Unmap) || (order && mode == AlterMode::UnmapTree))
-            {
-                free_phys_pages(tmp & MMASK_PHYS, 1);
-                dir[i] = 0;
+                page_dir[i] = tmp;
             }
         }
     }
-};
 
-template <AlterMode mode> struct PageAlterator<mode, -1>
-{
-    static void
-    run(uint64_t* dir, uint64_t dir_base, uint64_t virt_start, uint64_t phys_start, uint64_t npages, uint64_t flags)
-    {}
-};
-
-template <AlterMode mode> void alter_pages(void* ptr, uint64_t phys, size_t size, int prot)
-{
-    uint64_t cr3;
-    uint64_t flags;
-
-    if (!size) return;
-
-    flags = 0;
-
-    if (prot & KPROT_WRITE) flags |= 0x2;
-    if (prot & KPROT_USER) flags |= 0x4;
-    if (!(prot & KPROT_EXECUTE)) flags |= gKernel.nx_mask;
-
-    ASM ("mov %%cr3, %0\r\n" : "=a"(cr3));
-    PageAlterator<mode, 3>::run((uint64_t*)physical_to_virtual(cr3),
-                                0,
-                                (uint64_t)ptr,
-                                phys,
-                                (size + PAGESIZE - 1) / PAGESIZE,
-                                flags);
-    ASM ("mov %0, %%cr3\r\n" :: "a"(cr3));
+    cr3_write((uint64_t)gKernel.cr3);
 }
 
-void* physical_to_virtual(uint64_t physical) { return (void*)(0xffff800000000000 | physical); }
-
-void kmtouch(void* ptr, size_t size, int prot) { alter_pages<AlterMode::Touch>(ptr, 0, size, prot); }
-
-void kmprotect(void* ptr, size_t size, int prot) { alter_pages<AlterMode::Protect>(ptr, 0, size, prot); }
-
-void* kmmap(void* ptr, uint64_t phys, size_t size, int prot, int flags)
+void* kmapanon(void* addr, size_t size, int prot)
 {
-    size = page_round(size);
+    PageIterator iter;
+    uint64_t* page_dir;
+    int page_depth;
+    int page_count;
 
-    if (!ptr && ((flags & KMAP_FIXED) == 0)) { ptr = io_alloc(size); }
+    uint64_t flags = page_prot_flags(prot);
+    uint64_t tmp;
 
-    if (flags & KMAP_ANONYMOUS)
+    page_iter_create(&iter, (uint64_t)gKernel.cr3, addr, size);
+    while (page_iter_next(&iter, &page_depth, &page_dir, &page_count) == 0)
     {
-        alter_pages<AlterMode::MapAnon>(ptr, 0, size, prot);
-    } else
-    {
-        alter_pages<AlterMode::Map>(ptr, phys, size, prot);
+        for (int i = 0; i < page_count; ++i)
+        {
+            if (page_depth)
+            {
+                tmp = page_dir[i];
+                if (!(tmp & X86_PAGE_PRESENT))
+                {
+                    tmp = alloc_zero_page();
+                    tmp |= (X86_PAGE_PRESENT | X86_PAGE_WRITE | X86_PAGE_USER);
+                    page_dir[i] = tmp;
+                }
+            }
+            else
+            {
+                tmp = alloc_zero_page();
+                tmp |= (X86_PAGE_PRESENT | flags);
+                page_dir[i] = tmp;
+            }
+        }
     }
 
-    return ptr;
+    cr3_write((uint64_t)gKernel.cr3);
+    return addr;
 }
 
-void kmunmap(void* ptr, size_t size) { alter_pages<AlterMode::Unmap>(ptr, 0, size, 0); }
-
-void kmunmap_tree(void* ptr, size_t size) { alter_pages<AlterMode::UnmapTree>(ptr, 0, size, 0); }
-
-void kmprotect_kernel(void)
+void* kmap(void* addr, uint64_t phys, size_t size, int prot)
 {
-    kmtouch(
-        &__KERNEL_IMAGE_START, &__KERNEL_IMAGE_END - &__KERNEL_IMAGE_START, KPROT_READ | KPROT_WRITE | KPROT_EXECUTE);
-    kmprotect(&__KERNEL_SECTION_EXEC_START,
-              &__KERNEL_SECTION_EXEC_END - &__KERNEL_SECTION_EXEC_START,
-              KPROT_READ | KPROT_EXECUTE);
-    kmprotect(
-        &__KERNEL_SECTION_RODATA_START, &__KERNEL_SECTION_RODATA_END - &__KERNEL_SECTION_RODATA_START, KPROT_READ);
-    kmprotect(&__KERNEL_SECTION_DATA_START,
-              &__KERNEL_SECTION_DATA_END - &__KERNEL_SECTION_DATA_START,
-              KPROT_READ | KPROT_WRITE);
-    kmprotect(
-        &__KERNEL_SECTION_BSS_START, &__KERNEL_SECTION_BSS_END - &__KERNEL_SECTION_BSS_START, KPROT_READ | KPROT_WRITE);
+    PageIterator iter;
+    uint64_t* page_dir;
+    int page_depth;
+    int page_count;
+
+    uint64_t flags = page_prot_flags(prot);
+    uint64_t tmp;
+
+    phys &= ~(0xfffULL);
+
+    if (addr == NULL)
+        addr = io_alloc(size);
+
+    page_iter_create(&iter, (uint64_t)gKernel.cr3, addr, size);
+    while (page_iter_next(&iter, &page_depth, &page_dir, &page_count) == 0)
+    {
+        for (int i = 0; i < page_count; ++i)
+        {
+            if (page_depth)
+            {
+                tmp = page_dir[i];
+                if (!(tmp & X86_PAGE_PRESENT))
+                {
+                    tmp = alloc_zero_page();
+                    tmp |= (X86_PAGE_PRESENT | X86_PAGE_WRITE | X86_PAGE_USER);
+                    page_dir[i] = tmp;
+                }
+            }
+            else
+            {
+                tmp = phys;
+                tmp |= (X86_PAGE_PRESENT | flags);
+                page_dir[i] = tmp;
+                phys += PAGESIZE;
+            }
+        }
+    }
+
+    cr3_write((uint64_t)gKernel.cr3);
+    return addr;
+}
+
+void kunmapanon(void* addr, size_t size)
+{
+    PageIterator iter;
+    uint64_t* page_dir;
+    int page_depth;
+    int page_count;
+
+    uint64_t mask = ~((uint64_t)(X86_PAGE_USER | X86_PAGE_WRITE | gKernel.nx_mask));
+    uint64_t tmp;
+
+    page_iter_create(&iter, (uint64_t)gKernel.cr3, addr, size);
+    while (page_iter_next(&iter, &page_depth, &page_dir, &page_count) == 0)
+    {
+        if (page_depth == 0)
+        {
+            for (int i = 0; i < page_count; ++i)
+            {
+                tmp = page_dir[i] & MMASK_PHYS;
+                free_phys_pages(tmp, 1);
+                page_dir[i] = 0;
+            }
+        }
+    }
+
+    cr3_write((uint64_t)gKernel.cr3);
+}
+
+static void set_kernel_hierarchy_mem_prot(int depth, uint64_t* dir)
+{
+    for (int i = 0; i < 512; ++i)
+    {
+        if (dir[i] & X86_PAGE_PRESENT)
+        {
+            dir[i] |= X86_PAGE_WRITE;
+            if (depth)
+                set_kernel_hierarchy_mem_prot(depth - 1, (uint64_t*)physical_to_virtual(dir[i] & MMASK_PHYS));
+        }
+    }
+}
+
+void init_kernel_mem_prot(void)
+{
+    set_kernel_hierarchy_mem_prot(2, (uint64_t*)physical_to_virtual(gKernel.cr3[511] & MMASK_PHYS));
+    kmprotect(&__KERNEL_SECTION_EXEC_START, &__KERNEL_SECTION_EXEC_END - &__KERNEL_SECTION_EXEC_START, KPROT_READ | KPROT_EXECUTE);
+    kmprotect(&__KERNEL_SECTION_RODATA_START, &__KERNEL_SECTION_RODATA_END - &__KERNEL_SECTION_RODATA_START, KPROT_READ);
+    kmprotect(&__KERNEL_SECTION_DATA_START, &__KERNEL_SECTION_DATA_END - &__KERNEL_SECTION_DATA_START, KPROT_READ | KPROT_WRITE);
+    kmprotect(&__KERNEL_SECTION_BSS_START, &__KERNEL_SECTION_BSS_END - &__KERNEL_SECTION_BSS_START, KPROT_READ | KPROT_WRITE);
 }

@@ -16,7 +16,7 @@ static void* make_new_block(size_t size)
     blk        = (HeapBlock*)((char*)HEAP_BASE + gKernel.heap_size);
     extra_size = page_round(size + sizeof(HeapBlock));
     gKernel.heap_size += extra_size;
-    kmmap(blk, 0, extra_size, KPROT_READ | KPROT_WRITE, KMAP_ANONYMOUS | KMAP_FIXED);
+    kmapanon(blk, extra_size, KPROT_READ | KPROT_WRITE);
     blk->used = 1;
     blk->size = extra_size - sizeof(HeapBlock);
 
@@ -41,7 +41,7 @@ static void shrink(void)
         blk = (HeapBlock*)((char*)blk + sizeof(HeapBlock) + blk->size);
     }
 
-    kmunmap((char*)HEAP_BASE + newSize, gKernel.heap_size - newSize);
+    kunmapanon((char*)HEAP_BASE + newSize, gKernel.heap_size - newSize);
     gKernel.heap_size = newSize;
 }
 
