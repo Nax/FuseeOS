@@ -6,7 +6,7 @@ typedef struct
     int         offset[4];
     int         len[4];
     int         len_current[4];
-    int         index[3];
+    int         index[4];
     int         state;
 } PageIterator;
 
@@ -241,7 +241,6 @@ void kunmapanon(void* addr, size_t size)
     int page_depth;
     int page_count;
 
-    uint64_t mask = ~((uint64_t)(X86_PAGE_USER | X86_PAGE_WRITE | gKernel.nx_mask));
     uint64_t tmp;
 
     page_iter_create(&iter, (uint64_t)gKernel.cr3, addr, size);
@@ -261,6 +260,15 @@ void kunmapanon(void* addr, size_t size)
     cr3_write((uint64_t)gKernel.cr3);
 }
 
+static void set_kernel_half(void)
+{
+    for (int i = 256; i < 512; ++i)
+    {
+        if (!(gKernel.cr3[i] & X86_PAGE_PRESENT))
+            gKernel.cr3[i] = alloc_zero_page() | X86_PAGE_PRESENT | X86_PAGE_USER;
+    }
+}
+
 static void set_kernel_hierarchy_mem_prot(int depth, uint64_t* dir)
 {
     for (int i = 0; i < 512; ++i)
@@ -276,6 +284,7 @@ static void set_kernel_hierarchy_mem_prot(int depth, uint64_t* dir)
 
 void init_kernel_mem_prot(void)
 {
+    set_kernel_half();
     set_kernel_hierarchy_mem_prot(2, (uint64_t*)physical_to_virtual(gKernel.cr3[511] & MMASK_PHYS));
     kmprotect(&__KERNEL_SECTION_EXEC_START, &__KERNEL_SECTION_EXEC_END - &__KERNEL_SECTION_EXEC_START, KPROT_READ | KPROT_EXECUTE);
     kmprotect(&__KERNEL_SECTION_RODATA_START, &__KERNEL_SECTION_RODATA_END - &__KERNEL_SECTION_RODATA_START, KPROT_READ);

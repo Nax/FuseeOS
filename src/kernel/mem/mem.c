@@ -21,6 +21,12 @@ static void init_nx(void)
     }
 }
 
+static void unmap_lomem(void)
+{
+    for (int i = 0; i < 128; ++i)
+        gKernel.cr3[i] = 0;
+}
+
 void init_mem(void)
 {
     /* Initialize the memory subsystems */
@@ -41,6 +47,9 @@ void init_mem(void)
     /* Remap the video buffer */
     gBootParams.video.framebuffer = kmap(NULL, (uint64_t)gBootParams.video.framebuffer, gBootParams.video.pitch * gBootParams.video.height, KPROT_READ | KPROT_WRITE);
     kprintf("Video Buffer: 0x%lx\n", (uint64_t)gBootParams.video.framebuffer);
+
+    /* Free lomem */
+    unmap_lomem();
 
     /* Free all lomem paging info */
     // kmunmap_tree(NULL, 0x100000000);

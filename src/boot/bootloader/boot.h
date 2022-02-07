@@ -56,8 +56,8 @@ void puthex32(uint32_t);
 void puthex64(uint64_t);
 
 /* Memory */
-void  memory_detect(void);
-void* memory_alloc(uint32_t size);
+void memory_detect(void);
+void memory_identity_map(void);
 
 /* Disk */
 void disk_read_raw(char* dst, uint64_t lba, uint32_t sectors);
@@ -73,9 +73,10 @@ void     mfs_read(char* dst, uint64_t inode);
 void  initram_init(void);
 char* initram_lookup(const char* name);
 
-/* mmap */
-void mmap64(void* src, uint64_t dst, uint64_t size);
-void mmap64_4GiB(void);
+/* alloc */
+uint64_t    alloc_page_lo(void);
+uint64_t    alloc_page_hi(void);
+void        valloc(void* addr, size_t size);
 
 /* elf */
 uint64_t elf_load(const char* name);

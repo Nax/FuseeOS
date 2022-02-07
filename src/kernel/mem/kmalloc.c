@@ -1,6 +1,6 @@
 #include <kernel/kernel.h>
 
-#define HEAP_BASE ((void*)0xfffffff000000000)
+#define HEAP_BASE ((void*)0xffffa00000000000)
 
 typedef struct _ALIGN(32)
 {

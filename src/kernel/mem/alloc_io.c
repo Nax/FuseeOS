@@ -1,7 +1,7 @@
 #include <kernel/kernel.h>
 #include <kernel/mem.h>
 
-#define IO_BASE ((void*)0xfffffff800000000)
+#define IO_BASE ((void*)0xffffc00000000000)
 
 void* io_alloc(size_t size)
 {
@@ -16,6 +16,5 @@ void* io_alloc(size_t size)
 
 void io_free(void* addr)
 {
-
+    _UNUSED(addr);
 }
-

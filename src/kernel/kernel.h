@@ -12,7 +12,7 @@
 #include <string.h>
 #include <strings.h>
 
-#define BREAKPOINT   __asm__ __volatile__("xchg %bx, %bx\r\n")
+#define BREAKPOINT   __asm__ __volatile__("xchg %%bx, %%bx\r\n" ::: "memory")
 
 typedef union
 {

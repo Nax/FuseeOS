@@ -27,10 +27,8 @@ void proc_init(void)
 
 static void* proc_alloc(Process* proc, void* addr, uint64_t size, int prot)
 {
-    ASM("mov %0, %%cr3\r\n" :: "rax"(proc->addr_space.cr3));
-    BREAKPOINT;
+    ASM("mov %0, %%cr3\r\n" :: "rax"(proc->addr_space.cr3) : "memory");
     kmapanon(addr, size, KPROT_USER | prot);
-    BREAKPOINT;
     return addr;
 }
 
@@ -61,6 +59,8 @@ static void load_elf(Process* proc, const char* image)
     proc->regs[X86_REG_SP] = (uint64_t)(stack + stack_size);
     proc->regs[X86_REG_FLAGS] = getflags() | X86_FLAG_IF;
     proc->regs[X86_REG_IP] = ehdr->e_entry + rambase;
+
+    BREAKPOINT;
 }
 
 static uint64_t create_cr3()
@@ -70,7 +70,7 @@ static uint64_t create_cr3()
     uint64_t*   cr3_kernel_ptr;
     uint64_t*   cr3_user_ptr;
 
-    ASM("mov %%cr3, %0\r\n" : "=a"(cr3_kernel));
+    ASM("mov %%cr3, %0\r\n" : "=a"(cr3_kernel) :: "memory");
     cr3_user = alloc_phys(PAGESIZE);
 
     cr3_kernel_ptr = (uint64_t*)physical_to_virtual(cr3_kernel);
@@ -154,7 +154,7 @@ static Process* next_proc(void)
 
 static void _NORETURN sched_exec(Process* proc)
 {
-    ASM("mov %0, %%cr3\r\n" :: "rax"(proc->addr_space.cr3));
+    ASM("mov %0, %%cr3\r\n" :: "rax"(proc->addr_space.cr3) : "memory");
     gKernel.threads[0].proc = proc;
     timer_ns(100000);
     proc->run(proc);

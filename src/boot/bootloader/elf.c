@@ -16,10 +16,9 @@ uint64_t elf_load(const char* name)
 
     for (int i = 0; i < ehdr->e_phnum; ++i)
     {
-        tmp = memory_alloc(phdr[i].p_memsz);
-        memset(tmp, 0, phdr[i].p_memsz);
+        tmp = (char*)phdr[i].p_vaddr;
+        valloc(tmp, phdr[i].p_memsz);
         memcpy(tmp, base + phdr[i].p_offset, phdr[i].p_filesz);
-        mmap64(tmp, phdr[i].p_vaddr, phdr[i].p_memsz);
     }
 
     return ehdr->e_entry;

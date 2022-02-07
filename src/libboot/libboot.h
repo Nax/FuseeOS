@@ -17,7 +17,8 @@ typedef struct
 {
     uint64_t base;
     uint64_t size;
-} BootMemRegion;
+}
+BootMemRegion;
 
 typedef struct
 {
